@@ -1,9 +1,11 @@
+import { encrypt, decrypt } from "../utils/crypto";
+
 /**
  * Meta Ads Service
  * Handles campaign creation and performance monitoring.
  */
 export class MetaAdsService {
-  private accessToken: string;
+  private accessToken: string; // This will now be the decrypted master token or organization-specific token
   private adAccountId: string;
 
   constructor() {

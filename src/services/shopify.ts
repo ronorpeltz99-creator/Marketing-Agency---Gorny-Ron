@@ -1,3 +1,5 @@
+import { encrypt, decrypt } from "../utils/crypto";
+
 /**
  * Shopify Service
  * Handles store management and product operations.
@@ -14,10 +16,13 @@ export class ShopifyService {
   async createStore(name: string) {
     // Logic for creating a development store via Partner API
     console.log(`Creating store: ${name}`);
+    return { id: 'new_store_id', url: `${name}.myshopify.com` };
   }
 
-  async importProduct(storeUrl: string, productData: any) {
-    // Logic for importing products via Storefront/Admin API
-    console.log(`Importing product to: ${storeUrl}`);
+  async importProduct(storeId: string, productData: any) {
+    // 1. Fetch encrypted token from DB (Supabase)
+    // 2. Decrypt token using decrypt()
+    // 3. Call Shopify API with decrypted token
+    console.log(`Importing product to store: ${storeId}`);
   }
 }
