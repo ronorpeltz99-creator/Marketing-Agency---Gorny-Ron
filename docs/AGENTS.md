@@ -2,38 +2,49 @@
 
 Our platform operates using a specialized team of autonomous agents, each dedicated to a specific part of the e-commerce production pipeline.
 
-## 1. Shopify Agent (The Builder)
-- **Goal**: Create and design high-converting Shopify stores from a product URL.
+## 1. Competitor Spy Agent (The Intel) [NEW]
+- **Goal**: Analyze the market and competitors before any build starts.
 - **Skills**:
-  - Shopify Partner API integration.
-  - Theme customization (Dawn/Custom).
-  - Product import and configuration.
-  - Legal & Policy page generation.
+  - Scraping TikTok Creative Center & Meta Ad Library.
+  - Price point analysis and offer structure identification.
+  - "Hook" extraction from successful viral ads.
 
-## 2. Creative Team (The Designers)
+## 2. Shopify Agent (The Builder)
+- **Goal**: Create and design high-converting Shopify stores.
+- **Skills**:
+  - Shopify Partner API & Admin API.
+  - **Conversion-First Architect**: Implementing proven high-UI/UX patterns.
+  - **Dynamic A/B Testing**: Creating multiple landing page variations.
+
+## 3. Sourcing & Logistics Agent (The Manager) [UPDATED]
+- **Goal**: Source quality products and handle automated fulfillment.
+- **Skills**:
+  - **Anti-Scam Verification**: Real-time supplier quality audit.
+  - DSers API integration for automated ordering.
+  - Tracking number sync and customer notification.
+
+## 4. Creative Team (The Designers)
 ### Copywriting Agent (The Word-Smith)
-- **Goal**: Write compelling, high-conversion ad copy and product descriptions.
-- **Frameworks**: AIDA, PAS, and "Golden Hour" emotional triggers.
-- **Output**: Ad headlines, body text, and product page copy.
+- **Goal**: Write compelling, high-conversion ad copy.
+- **Skills**: Viral-Hook Engine integration.
 
 ### Visual Agent (The Artist)
 - **Goal**: Generate stunning product imagery and video assets.
-- **Tools**: Fal.ai, Higgsfield, and custom Image-to-Video models.
-- **Output**: 1:1 Social square images, 9:16 Story videos.
+- **Tools**: Fal.ai, Higgsfield.
 
-## 3. Meta Agent (The Media Buyer)
+## 5. Meta Agent (The Media Buyer)
 - **Goal**: Launch and optimize campaigns on Meta Ads Manager.
 - **Skills**:
-  - Meta Graph API integration.
-  - Campaign, Ad Set, and Ad creation.
-  - Pixel and Tracking setup.
-  - Automatic bid optimization based on ROAS.
+  - **ROAS Optimizer**: Autonomous Kill/Scale logic based on real-time data.
 
 ---
 
-## The Workflow Pipeline
-1. **Input**: User provides a Product URL.
-2. **Shopify Agent** starts building the store in the background.
-3. **Creative Team** works in parallel to generate assets based on the product.
-4. **Meta Agent** waits for both to finish, then bundles everything and launches.
-5. **System** begins monitoring performance and reporting back to the Control Center.
+## The Turbo Pipeline (Parallel Execution)
+1. **Trigger**: Product URL Input.
+2. **Parallel Phase**: 
+   - **Intel Agent** gathers competitor data.
+   - **Sourcing Agent** verifies supplier and imports to DSers.
+   - **Shopify Agent** spins up the environment.
+3. **Synthesis**: **Creative Team** uses Intel + Product data to generate assets.
+4. **Launch**: **Meta Agent** launches based on budget and generated assets.
+5. **Continuous**: **Logistics Agent** handles orders; **Meta Agent** handles Kill/Scale.

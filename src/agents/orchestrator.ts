@@ -2,43 +2,59 @@ import { DsersService } from "../services/dsers";
 import { ShopifyService } from "../services/shopify";
 import { CreativeService } from "../services/creative";
 import { MetaAdsService } from "../services/meta";
+import { IntelligenceService } from "../services/intelligence";
+import { LogisticsService } from "../services/logistics";
 
 /**
- * Agent Orchestrator
- * The "Main Bot" that coordinates the entire autonomous pipeline.
+ * Agent Orchestrator (Turbo Mode)
+ * Coordinates the autonomous pipeline with Parallel Execution.
  */
 export class AgentOrchestrator {
   private dsers = new DsersService();
   private shopify = new ShopifyService();
   private creative = new CreativeService();
   private meta = new MetaAdsService();
+  private intel = new IntelligenceService();
+  private logistics = new LogisticsService();
 
   /**
-   * THE MAIN ENTRY POINT
-   * Input: Product URL + Budget
+   * THE TURBO ENTRY POINT
+   * Runs multiple agents in parallel to maximize speed and efficiency.
    */
   async runFullPipeline(productUrl: string, dailyBudget: number) {
-    console.log("--- STARTING AUTONOMOUS PIPELINE ---");
+    console.log("--- STARTING TURBO AUTONOMOUS PIPELINE ---");
 
-    // Phase 1: Sourcing
-    const supplier = await this.dsers.findBestSupplier(productUrl);
-    
-    // Phase 2: Store Building
-    const store = await this.shopify.createStore(supplier.supplierId);
-    await this.dsers.importProduct(supplier.optimizedUrl, store.storeId);
-    
-    // Phase 3: Creative Generation
-    const scripts = await this.creative.generateScripts(supplier);
-    const images = await this.creative.generateImages(supplier.supplierId);
+    // PHASE 1: Parallel Research & Setup
+    console.log("[Phase 1] Running Intel, Sourcing, and Store Setup in parallel...");
+    const [intelData, supplier, store] = await Promise.all([
+      this.intel.analyzeCompetitors(productUrl),
+      this.dsers.findBestSupplier(productUrl),
+      this.shopify.createStore("NewTestStore")
+    ]);
+
+    // PHASE 2: Parallel Creative Generation & Store Design
+    console.log("[Phase 2] Generating Creatives and Designing Store...");
+    const [scripts, images] = await Promise.all([
+      this.creative.generateScripts({ ...supplier, intel: intelData }),
+      this.creative.generateImages(supplier.supplierId)
+    ]);
+
+    // Create the video using the first script and generated images
     const video = await this.creative.generateVideo(scripts[0].body, images);
 
-    // Phase 4: Launch
-    await this.shopify.designStore(store.storeId, { logo: images[0], video });
-    await this.shopify.setupLegalPages(store.storeId);
-    
+    // PHASE 3: Synthesis & Final Prep
+    console.log("[Phase 3] Finalizing Store Design and Legal Pages...");
+    await Promise.all([
+      this.shopify.designStore(store.storeId, { logo: images[0], video, intel: intelData }),
+      this.shopify.setupLegalPages(store.storeId),
+      this.dsers.importProduct(supplier.optimizedUrl, store.storeId)
+    ]);
+
+    // PHASE 4: Launch
+    console.log("[Phase 4] Launching Meta Campaign...");
     const campaign = await this.meta.launchCampaign(store.storeUrl, dailyBudget, [video, ...images]);
 
-    console.log("--- PIPELINE COMPLETE: STORE IS LIVE & ADS ARE RUNNING ---");
+    console.log("--- TURBO PIPELINE COMPLETE ---");
     return { store, campaign };
   }
 }
