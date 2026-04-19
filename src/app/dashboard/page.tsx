@@ -6,7 +6,8 @@ import {
   Search, Store, Palette, Rocket, LayoutDashboard, BarChart3, Settings, 
   ChevronRight, Plus, Zap, ShieldCheck, Globe, MoreVertical, Link as LinkIcon, 
   ArrowLeft, Target, Eye, DollarSign, Play, Pause as PauseIcon, RefreshCcw,
-  TrendingUp, TrendingDown, Trash2, Sliders, CheckCircle2, AlertCircle
+  TrendingUp, TrendingDown, Trash2, Sliders, CheckCircle2, AlertCircle,
+  ShieldAlert, Activity, Users, Info
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -16,23 +17,32 @@ export default function DashboardPage() {
   const [budget, setBudget] = useState('50');
   const [isLaunching, setIsLaunching] = useState(false);
 
+  // MOCK DATA FOR THE "INTEL" WIDGET
+  const intelData = {
+    competitors: [
+      { name: 'TrendLights.com', price: '$29.99', ads: 12 },
+      { name: 'HomeGlow Shop', price: '$24.50', ads: 5 }
+    ],
+    winningHooks: ['Stop missing the golden hour...', 'The only lamp you need for TikToks'],
+    targetAudience: '18-34, Female, Creators'
+  };
+
   const steps = [
-    { id: 1, title: 'Product Sourcing', status: 'completed', icon: Search, desc: 'DSers: Found cheapest reliable supplier' },
-    { id: 2, title: 'Store Builder', status: 'current', icon: Store, desc: 'Shopify: Designing high-conversion theme' },
-    { id: 3, title: 'Creative Suite', status: 'upcoming', icon: Palette, desc: 'AI: Generating scripts, videos & copy' },
-    { id: 4, title: 'Campaign Launch', status: 'upcoming', icon: Rocket, desc: 'Meta: Ready for budget injection' },
+    { id: 1, title: 'Competitor Intel', status: 'completed', icon: Users, desc: 'Found 12 active ads for this product' },
+    { id: 2, title: 'Product Sourcing', status: 'completed', icon: Search, desc: 'Supplier verified: 4.9 rating / 1k+ orders' },
+    { id: 3, title: 'Store Builder', status: 'current', icon: Store, desc: 'Designing Branded Shopify Experience' },
+    { id: 4, title: 'Campaign Launch', status: 'upcoming', icon: Rocket, desc: 'Ready for Meta Ads deployment' },
   ];
 
   const adPipeline = [
-    { id: 'ad_1', name: 'Video Ad #1 - Golden Hour', status: 'Active', spend: 142, roas: 4.2, cpm: 12.4, ctr: '2.8%', budget: 20 },
-    { id: 'ad_2', name: 'Image Ad #2 - Feature List', status: 'Active', spend: 98, roas: 2.1, cpm: 15.1, ctr: '1.4%', budget: 20 },
-    { id: 'ad_3', name: 'Short Ad #3 - User Testimonial', status: 'Active', spend: 110, roas: 3.5, cpm: 10.8, ctr: '2.1%', budget: 30 },
-    { id: 'ad_4', name: 'Video Ad #4 - Side-by-Side', status: 'Paused', spend: 50, roas: 0.8, cpm: 22.4, ctr: '0.6%', budget: 10 },
+    { id: 'ad_1', name: 'UGC Style - Review #1', status: 'Active', spend: 45, roas: 5.2, cpm: 9.4, ctr: '3.1%', budget: 20 },
+    { id: 'ad_2', name: 'Product Demo - Aesthetic', status: 'Active', spend: 32, roas: 3.1, cpm: 12.1, ctr: '2.4%', budget: 20 },
+    { id: 'ad_3', name: 'Comparison Video', status: 'Active', spend: 28, roas: 1.8, cpm: 15.8, ctr: '1.1%', budget: 10 },
   ];
 
   const liveTests = [
-    { id: 1, name: 'Crystal Lamp Store', status: 'Active', ads_count: 5, total_spend: 450, color: 'from-emerald-500/20 to-emerald-500/5' },
-    { id: 2, name: 'Aroma Diffuser V2', status: 'Optimizing', ads_count: 3, total_spend: 120, color: 'from-blue-500/20 to-blue-500/5' },
+    { id: 1, name: 'Crystal Lamp Store', status: 'Active', ads_count: 5, total_spend: 450, color: 'from-emerald-500/20 to-emerald-500/5', health: 'Safe' },
+    { id: 2, name: 'Aroma Diffuser V2', status: 'Optimizing', ads_count: 3, total_spend: 120, color: 'from-blue-500/20 to-blue-500/5', health: 'Warning' },
   ];
 
   return (
@@ -67,15 +77,13 @@ export default function DashboardPage() {
         </div>
 
         <div className="mt-auto">
-          <div className="p-6 rounded-3xl bg-zinc-900/50 border border-white/5 space-y-3">
+          <div className="p-6 rounded-3xl bg-zinc-900/50 border border-white/5 space-y-4">
             <div className="flex items-center justify-between text-[10px] font-bold text-zinc-500 uppercase">
-              <span>Agent Status</span>
-              <span className="text-emerald-500">All Systems Go</span>
+              <span>Account Health</span>
+              <span className="text-emerald-500 flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> Secure</span>
             </div>
-            <div className="flex -space-x-2">
-              {['🤖', '🎨', '🛒', '📈'].map((emoji, i) => (
-                <div key={i} className="w-8 h-8 rounded-full bg-zinc-800 border border-black flex items-center justify-center text-xs">{emoji}</div>
-              ))}
+            <div className="h-1 w-full bg-white/5 rounded-full overflow-hidden">
+              <div className="h-full w-[95%] bg-emerald-500"></div>
             </div>
           </div>
         </div>
@@ -95,12 +103,12 @@ export default function DashboardPage() {
               <header className="flex justify-between items-end mb-16">
                 <div>
                   <h1 className="text-6xl font-black tracking-tight mb-2">{selectedStore.name}</h1>
-                  <p className="text-zinc-400">Real-time Ad Metrics & Optimization Control</p>
+                  <p className="text-zinc-400 italic">Individual Ad Performance Pipeline</p>
                 </div>
                 <div className="flex gap-4">
-                  <button className="px-6 py-3 rounded-xl bg-white/5 border border-white/10 font-bold text-[10px] uppercase tracking-widest flex items-center gap-2">
-                    <RefreshCcw className="w-4 h-4" /> Sync Metrics
-                  </button>
+                  <div className={`px-4 py-2 rounded-xl border flex items-center gap-2 text-[10px] font-bold uppercase ${selectedStore.health === 'Safe' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-500' : 'bg-amber-500/10 border-amber-500/20 text-amber-500'}`}>
+                    <Activity className="w-4 h-4" /> Ad Account: {selectedStore.health}
+                  </div>
                 </div>
               </header>
 
@@ -130,13 +138,13 @@ export default function DashboardPage() {
 
                     <div className="flex items-center gap-3">
                       <div className="flex flex-col items-end mr-4">
-                        <div className="text-[8px] text-zinc-600 font-black uppercase mb-1">Daily Budget</div>
+                        <div className="text-[8px] text-zinc-600 font-black uppercase mb-1">Budget</div>
                         <div className="text-lg font-black text-white">${ad.budget}</div>
                       </div>
-                      <button title="Scale Up (Raise Budget)" className="p-4 rounded-2xl bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all">
+                      <button title="Scale Up (Raise Budget)" className="p-4 rounded-2xl bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500 hover:text-white transition-all shadow-[0_0_15px_rgba(16,185,129,0.1)]">
                         <TrendingUp className="w-5 h-5" />
                       </button>
-                      <button title="Kill Ad (Pause)" className="p-4 rounded-2xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all">
+                      <button title="Kill Ad (Stop)" className="p-4 rounded-2xl bg-red-500/10 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-[0_0_15px_rgba(239,68,68,0.1)]">
                         <Trash2 className="w-5 h-5" />
                       </button>
                     </div>
@@ -151,14 +159,14 @@ export default function DashboardPage() {
                   <div className="text-indigo-400 font-bold text-xs uppercase tracking-[0.3em] mb-4 flex items-center gap-2">
                     <div className="w-1.5 h-1.5 rounded-full bg-indigo-400 animate-ping"></div> Production Line
                   </div>
-                  <h1 className="text-6xl font-black tracking-tight">Machine <span className="text-zinc-600">Active</span></h1>
+                  <h1 className="text-6xl font-black tracking-tight">Machine <span className="text-zinc-600 italic">v2.1</span></h1>
                 </div>
               </header>
 
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
                 {steps.map((step) => (
                   <div key={step.id} className={`p-8 rounded-[40px] border transition-all ${step.status === 'current' ? 'bg-indigo-600/10 border-indigo-500/30 ring-1 ring-indigo-500/20' : 'bg-zinc-950 border-white/5 opacity-50'}`}>
-                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-6 ${step.status === 'completed' ? 'bg-emerald-500 text-black' : 'bg-white/5 text-indigo-400'}`}>
+                    <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-6 ${step.status === 'completed' ? 'bg-emerald-500 text-black shadow-[0_0_20px_rgba(16,185,129,0.3)]' : 'bg-white/5 text-indigo-400'}`}>
                       {step.status === 'completed' ? <CheckCircle2 className="w-6 h-6" /> : <step.icon className="w-6 h-6" />}
                     </div>
                     <h3 className="text-lg font-black mb-2">{step.title}</h3>
@@ -167,22 +175,45 @@ export default function DashboardPage() {
                 ))}
               </div>
 
-              <div className="p-12 rounded-[50px] bg-zinc-950 border border-white/5 relative overflow-hidden shadow-2xl">
-                <div className="flex items-center gap-8">
-                  <div className="w-24 h-24 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin flex items-center justify-center">
-                    <div className="w-16 h-16 rounded-full border-2 border-purple-500 border-b-transparent animate-spin"></div>
+              {/* INTEL WIDGET */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+                <div className="p-10 rounded-[50px] bg-zinc-950 border border-white/5 relative overflow-hidden shadow-2xl">
+                  <div className="flex items-center gap-4 mb-8">
+                    <div className="w-10 h-10 rounded-full bg-indigo-500/20 flex items-center justify-center text-indigo-400"><Info className="w-5 h-5" /></div>
+                    <h2 className="text-xl font-black tracking-tight italic uppercase">Market Intelligence</h2>
                   </div>
-                  <div>
-                    <h2 className="text-2xl font-black mb-2 tracking-tight italic uppercase">Processing Creative Scripts...</h2>
-                    <p className="text-zinc-500 text-sm max-w-lg">The AI Creative Agent is writing 5 unique video scripts and drafting ad headlines for the specified product. Ready to generate visuals next.</p>
+                  <div className="space-y-6">
+                    <div>
+                      <div className="text-[10px] text-zinc-600 font-black uppercase mb-3">Winning Hooks Found</div>
+                      <div className="space-y-2">
+                        {intelData.winningHooks.map((hook, i) => (
+                          <div key={i} className="p-3 rounded-xl bg-white/5 border border-white/5 text-xs text-zinc-300 font-medium">{hook}</div>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center p-4 rounded-2xl bg-indigo-600/5 border border-indigo-500/10">
+                      <div className="text-[10px] text-indigo-400 font-black uppercase">Target Audience</div>
+                      <div className="text-xs font-bold">{intelData.targetAudience}</div>
+                    </div>
                   </div>
-                  <button className="ml-auto px-10 py-5 rounded-3xl bg-white text-black font-black text-xs uppercase tracking-[0.2em] shadow-xl hover:scale-105 transition-all">Review Scripts</button>
+                </div>
+
+                <div className="p-10 rounded-[50px] bg-zinc-950 border border-white/5 relative overflow-hidden shadow-2xl flex flex-col justify-center">
+                   <div className="flex items-center gap-8">
+                    <div className="w-24 h-24 rounded-full border-2 border-indigo-500 border-t-transparent animate-spin flex items-center justify-center">
+                      <div className="w-16 h-16 rounded-full border-2 border-purple-500 border-b-transparent animate-spin"></div>
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-black mb-2 tracking-tight italic uppercase">Building Store...</h2>
+                      <p className="text-zinc-500 text-sm max-w-sm">Applying "Branded" methodology to ensure long-term account health and high trust scores.</p>
+                    </div>
+                  </div>
                 </div>
               </div>
             </motion.div>
           ) : (
             <motion.div key="monitoring" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }}>
-              <header className="mb-16"><h1 className="text-6xl font-black tracking-tight mb-4">Command Center</h1><p className="text-zinc-400 text-xl">Manage launched tests. Kill the losers, scale the winners.</p></header>
+              <header className="mb-16"><h1 className="text-6xl font-black tracking-tight mb-4">Command Center</h1><p className="text-zinc-400 text-xl">Manage launched tests. Monitor ROAS and scale winning assets.</p></header>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                 {liveTests.map((test) => (
                   <div key={test.id} onClick={() => setSelectedStore(test)} className="p-8 rounded-[40px] bg-zinc-950 border border-white/5 cursor-pointer relative overflow-hidden group">
@@ -190,7 +221,10 @@ export default function DashboardPage() {
                     <div className="relative z-10">
                       <div className="flex justify-between items-start mb-6">
                         <div className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center text-xl">📦</div>
-                        <span className={`text-[10px] font-bold px-2 py-1 rounded-md ${test.status === 'Active' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-zinc-800 text-zinc-500'}`}>{test.status}</span>
+                        <div className="flex flex-col items-end">
+                          <span className={`text-[10px] font-bold px-2 py-1 rounded-md mb-2 ${test.status === 'Active' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-zinc-800 text-zinc-500'}`}>{test.status}</span>
+                          <span className={`text-[8px] font-bold uppercase tracking-widest ${test.health === 'Safe' ? 'text-emerald-500' : 'text-amber-500'}`}>{test.health} Health</span>
+                        </div>
                       </div>
                       <h3 className="text-2xl font-black tracking-tight mb-2">{test.name}</h3>
                       <div className="mt-8 flex justify-between items-end"><div className="text-[10px] text-zinc-600 font-black uppercase tracking-widest">Total Ads: {test.ads_count}</div><ChevronRight className="w-6 h-6 text-zinc-700 group-hover:text-white transition-colors" /></div>
