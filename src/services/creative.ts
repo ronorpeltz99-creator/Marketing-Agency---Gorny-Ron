@@ -1,21 +1,41 @@
 /**
- * AI Creative Service (Fal.ai)
- * Handles image and video generation for ads.
+ * Creative AI Service
+ * Responsibility: Generate scripts, images, and videos for ads.
  */
-export class AICreativeService {
-  private apiKey: string;
+export class CreativeService {
+  private falKey: string;
 
   constructor() {
-    this.apiKey = process.env.FAL_KEY!;
+    this.falKey = process.env.FAL_API_KEY!;
   }
 
-  async generateImage(prompt: string) {
-    // Logic for generating ad images via Fal.ai (Flux/Nano Banana)
-    console.log(`Generating image for: ${prompt}`);
+  /**
+   * Generates ad scripts based on product data.
+   */
+  async generateScripts(productInfo: any) {
+    console.log(`[Creative] Writing scripts for: ${productInfo.name}`);
+    // AI CALL: Claude-3.5-Sonnet
+    return [
+      { id: 'sc_1', hook: 'The Golden Hour Trigger', body: '...' },
+      { id: 'sc_2', hook: 'Problem/Solution Framework', body: '...' }
+    ];
   }
 
-  async generateVideo(imageUrl: string, motionPrompt: string) {
-    // Logic for generating ad videos via Fal.ai (Seedance/Kling)
-    console.log(`Generating video from image with prompt: ${motionPrompt}`);
+  /**
+   * Generates images for the product using Fal.ai (Flux/Stable Diffusion).
+   */
+  async generateImages(prompt: string) {
+    console.log(`[Creative] Generating images with Fal.ai...`);
+    // API CALL: Fal.ai
+    return ['https://cdn.fal.ai/sample-image.jpg'];
+  }
+
+  /**
+   * Generates video ads using Higgsfield / Luma / Kling.
+   */
+  async generateVideo(script: string, images: string[]) {
+    console.log(`[Creative] Generating video ad...`);
+    // API CALL: Video Model API
+    return 'https://cdn.video.ai/sample-ad.mp4';
   }
 }

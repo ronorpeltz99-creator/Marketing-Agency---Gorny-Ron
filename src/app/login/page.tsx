@@ -40,13 +40,24 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <div className="flex gap-4">
-            <Button formAction={login} className="w-full">
-              Log in
-            </Button>
-            <Button formAction={signup} variant="outline" className="w-full">
-              Sign up
-            </Button>
+          <div className="flex flex-col gap-4">
+            <div className="flex gap-4">
+              <Button formAction={login} className="w-full">
+                Log in
+              </Button>
+              <Button formAction={signup} variant="outline" className="w-full">
+                Sign up
+              </Button>
+            </div>
+            
+            <div className="relative my-2">
+              <div className="absolute inset-0 flex items-center"><span className="w-full border-t border-zinc-800"></span></div>
+              <div className="relative flex justify-center text-xs uppercase"><span className="bg-zinc-900 px-2 text-zinc-500">Developer Tools</span></div>
+            </div>
+
+            <a href="/dashboard" className="flex h-10 w-full items-center justify-center rounded-lg bg-blue-600/20 border border-blue-500/30 text-blue-400 text-sm font-medium hover:bg-blue-600/30 transition-all active:scale-95">
+              Bypass Login (Dev Mode)
+            </a>
           </div>
         </form>
       </div>

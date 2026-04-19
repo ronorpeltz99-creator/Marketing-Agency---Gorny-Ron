@@ -1,8 +1,8 @@
-import { encrypt, decrypt } from "../utils/crypto";
+import { decrypt } from "../utils/crypto";
 
 /**
- * Shopify Service
- * Handles store management and product operations.
+ * Shopify Automation Service
+ * Responsibility: Build store, design theme, and create pages.
  */
 export class ShopifyService {
   private apiKey: string;
@@ -13,16 +13,35 @@ export class ShopifyService {
     this.apiSecret = process.env.SHOPIFY_API_SECRET!;
   }
 
-  async createStore(name: string) {
-    // Logic for creating a development store via Partner API
-    console.log(`Creating store: ${name}`);
-    return { id: 'new_store_id', url: `${name}.myshopify.com` };
+  /**
+   * Creates a new development store using the Shopify Partner API.
+   */
+  async createStore(organizationName: string) {
+    console.log(`[Shopify] Creating dev store for: ${organizationName}`);
+    // API CALL: Shopify Partner GraphQL API
+    return { 
+      storeId: 'sh_999', 
+      storeUrl: `${organizationName.toLowerCase().replace(/ /g, '-')}.myshopify.com`,
+      accessToken: 'shpat_temp_token' // This would be encrypted in DB
+    };
   }
 
-  async importProduct(storeId: string, productData: any) {
-    // 1. Fetch encrypted token from DB (Supabase)
-    // 2. Decrypt token using decrypt()
-    // 3. Call Shopify API with decrypted token
-    console.log(`Importing product to store: ${storeId}`);
+  /**
+   * Configures the theme and designs the home page.
+   */
+  async designStore(storeId: string, assets: any) {
+    console.log(`[Shopify] Designing theme for store ${storeId}`);
+    // API CALL: Admin API - Theme & Assets
+    // 1. Upload Logo
+    // 2. Set Colors (from AI palette)
+    // 3. Create Home Page sections
+  }
+
+  /**
+   * Generates and uploads legal pages (Refund, Shipping, Privacy).
+   */
+  async setupLegalPages(storeId: string) {
+    console.log(`[Shopify] Generating legal pages...`);
+    // API CALL: Admin API - Pages
   }
 }
