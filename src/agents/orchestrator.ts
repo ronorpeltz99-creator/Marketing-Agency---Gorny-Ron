@@ -1,60 +1,103 @@
-import { DsersService } from "../services/dsers";
-import { ShopifyService } from "../services/shopify";
-import { CreativeService } from "../services/creative";
-import { MetaAdsService } from "../services/meta";
-import { IntelligenceService } from "../services/intelligence";
-import { LogisticsService } from "../services/logistics";
+import { ShopifyService } from '../services/shopify';
+import { MetaAdsService } from '../services/meta';
+import { DsersService } from '../services/dsers';
+import { CreativeService } from '../services/creative';
+import { IntelligenceService } from '../services/intelligence';
+import { createClient } from '../utils/supabase/server';
 
-/**
- * Agent Orchestrator (Turbo Mode)
- * Coordinates the autonomous pipeline with Parallel Execution.
- */
+export type PipelineStatus = 'IDLE' | 'COMPETITOR_INTEL' | 'PRODUCT_SOURCING' | 'STORE_BUILDING' | 'CREATIVE_GEN' | 'LAUNCHING' | 'WAITING_FOR_USER' | 'COMPLETED' | 'FAILED';
+
 export class AgentOrchestrator {
-  private dsers = new DsersService();
   private shopify = new ShopifyService();
-  private creative = new CreativeService();
   private meta = new MetaAdsService();
+  private dsers = new DsersService();
+  private creative = new CreativeService();
   private intel = new IntelligenceService();
-  private logistics = new LogisticsService();
 
-  /**
-   * THE TURBO ENTRY POINT
-   * Runs multiple agents in parallel to maximize speed and efficiency.
-   */
-  async runFullPipeline(productUrl: string, dailyBudget: number) {
-    console.log("--- STARTING TURBO AUTONOMOUS PIPELINE ---");
+  async updateStatus(testId: string, status: PipelineStatus, newMetadata: any = {}) {
+    const supabase = await createClient();
+    
+    // Fetch existing metadata first to merge
+    const { data: existing } = await supabase
+      .from('active_tests')
+      .select('metadata')
+      .eq('id', testId)
+      .single();
 
-    // PHASE 1: Parallel Research & Setup
-    console.log("[Phase 1] Running Intel, Sourcing, and Store Setup in parallel...");
-    const [intelData, supplier, store] = await Promise.all([
-      this.intel.analyzeCompetitors(productUrl),
-      this.dsers.findBestSupplier(productUrl),
-      this.shopify.createStore("NewTestStore")
-    ]);
+    const mergedMetadata = {
+      ...(existing?.metadata || {}),
+      ...newMetadata,
+      [`status_${status.toLowerCase()}_at`]: new Date().toISOString()
+    };
 
-    // PHASE 2: Parallel Creative Generation & Store Design
-    console.log("[Phase 2] Generating Creatives and Designing Store...");
-    const [scripts, images] = await Promise.all([
-      this.creative.generateScripts({ ...supplier, intel: intelData }),
-      this.creative.generateImages(supplier.supplierId)
-    ]);
+    await supabase
+      .from('active_tests')
+      .update({ 
+        status, 
+        last_update: new Date().toISOString(),
+        metadata: mergedMetadata 
+      })
+      .eq('id', testId);
+  }
 
-    // Create the video using the first script and generated images
-    const video = await this.creative.generateVideo(scripts[0].body, images);
+  async runFullPipeline(testId: string, productUrl: string, dailyBudget: number, manualMode: boolean) {
+    try {
+      // PHASE 1: Intelligence & Sourcing (Parallel)
+      await this.updateStatus(testId, 'COMPETITOR_INTEL');
+      const [marketData, supplierData] = await Promise.all([
+        this.intel.analyzeCompetitors(productUrl),
+        this.dsers.findBestSupplier(productUrl)
+      ]);
 
-    // PHASE 3: Synthesis & Final Prep
-    console.log("[Phase 3] Finalizing Store Design and Legal Pages...");
-    await Promise.all([
-      this.shopify.designStore(store.storeId, { logo: images[0], video, intel: intelData }),
-      this.shopify.setupLegalPages(store.storeId),
-      this.dsers.importProduct(supplier.optimizedUrl, store.storeId)
-    ]);
+      if (manualMode) {
+        await this.updateStatus(testId, 'WAITING_FOR_USER', { marketData, supplierData });
+        return; // Halt until user sends 'resume' signal
+      }
 
-    // PHASE 4: Launch
-    console.log("[Phase 4] Launching Meta Campaign...");
-    const campaign = await this.meta.launchCampaign(store.storeUrl, dailyBudget, [video, ...images]);
+      await this.resumeFromSourcing(testId, marketData, supplierData, dailyBudget);
 
-    console.log("--- TURBO PIPELINE COMPLETE ---");
-    return { store, campaign };
+    } catch (error: any) {
+      console.error('Pipeline Error:', error);
+      await this.updateStatus(testId, 'FAILED', { error: error.message });
+      throw error;
+    }
+  }
+
+  async resumeFromSourcing(testId: string, marketData: any, supplierData: any, dailyBudget: number) {
+    try {
+      // PHASE 2: Store Build & Creative Gen (Parallel)
+      await this.updateStatus(testId, 'STORE_BUILDING');
+      
+      const [storeResult, creatives] = await Promise.all([
+        this.shopify.createStore(marketData.suggestedStoreName || 'New Store'),
+        this.creative.generateScripts(marketData)
+      ]);
+
+      // PHASE 3: Design Application
+      await this.updateStatus(testId, 'CREATIVE_GEN');
+      await this.shopify.designStore(storeResult.id, { ...marketData, ...creatives });
+
+      // PHASE 4: Launch
+      await this.updateStatus(testId, 'LAUNCHING');
+      const campaign = await this.meta.launchCampaign(storeResult.name, dailyBudget, creatives.ads);
+
+      await this.updateStatus(testId, 'COMPLETED', { campaignId: campaign.id, storeUrl: storeResult.url });
+      
+      return { success: true, storeUrl: storeResult.url };
+
+    } catch (error: any) {
+      await this.updateStatus(testId, 'FAILED', { error: error.message });
+      throw error;
+    }
+  }
+
+  async handleUserApproval(testId: string, approvedData: any) {
+    // This will be called when the user clicks 'Confirm' in the dashboard
+    const supabase = await createClient();
+    const { data: test } = await supabase.from('active_tests').select('*').eq('id', testId).single();
+    
+    if (test) {
+      return this.resumeFromSourcing(testId, test.metadata.marketData, test.metadata.supplierData, test.daily_budget);
+    }
   }
 }
