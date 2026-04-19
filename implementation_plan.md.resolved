@@ -1,0 +1,53 @@
+# AI Dropshipping Operations Platform — Implementation Plan
+
+Right now, we have an empty canvas with a perfect set of instructions (`CLAUDE.md`) and a master list of environment variables (`.env.example`). Because this project is massive, we need to build it in structured phases so that both you and Yuval can work on it simultaneously without stepping on each other's toes.
+
+Here is the blueprint for how we actually bring this codebase to life.
+
+## User Review Required
+
+> [!IMPORTANT]  
+> Please review Phase 1. If you approve, I will automatically run the terminal commands to generate the Next.js application, install the core libraries, and build out the directory structure.
+
+## Proposed Changes
+
+We will divide the build into 5 distinct phases. I will handle Phase 1 right now once you approve.
+
+### Phase 1: Core Scaffolding (What I will do next)
+Currently, there is no code. I will initialize the foundation of the app.
+- Run `npx create-next-app@latest ./` to set up Next.js 15 with TypeScript and TailwindCSS in this folder.
+- Run `npx shadcn@latest init` to set up our UI component library.
+- Create the exact folder structure mandated by `CLAUDE.md`:
+  - `agents/` (for the AI agent scripts)
+  - `workflows/` (for the SOP markdown files)
+  - `tools/` (for the deterministic TypeScript functions)
+  - `jobs/` (for Trigger.dev scheduled tasks)
+  - `lib/` (for shared DB and Anthropic clients)
+  - `supabase/` (for database schemas and migrations)
+
+### Phase 2: Database & Auth Setup
+- Write `supabase/schema.sql` to define the multi-tenant database tables (Users, Organizations, Stores, Products, Campaigns).
+- Setup Row-Level Security (RLS) to ensure data isolation.
+- Configure the Supabase Next.js client for authentication.
+
+### Phase 3: The WAT Framework (Workflows, Agents, Tools)
+This is where we divide and conquer. You and Yuval can split these up:
+- **Tools:** Build the deterministic functions first (e.g., `tools/shopify/create-product.ts`, `tools/meta/create-campaign.ts`).
+- **Workflows:** Write the plain-English markdown SOPs for the agents.
+- **Agents:** Write the `index.ts` files that use Anthropic's Claude to read the workflows and execute the tools.
+
+### Phase 4: Dashboard & UI
+- Build the Next.js `(dashboard)` pages.
+- Connect the UI buttons to server actions that trigger the agents.
+
+## Open Questions for You & Yuval
+
+> [!NOTE]  
+> 1. **Who is doing what?** To avoid Git Merge Conflicts, it's best if one of you focuses on the "Backend" (Tools, Agents, Supabase) while the other focuses on the "Frontend" (Next.js Dashboard, UI components). Have you decided on a split?
+> 2. **Are you ready to run the initialization?** If you approve this plan, I will immediately run the commands to install Next.js into this folder and set up all the directories.
+
+## Verification Plan
+After Phase 1 is complete:
+- We will have a `package.json` file.
+- We will be able to run `npm run dev` and see a basic Next.js site running on `localhost:3000`.
+- The folder structure will perfectly match the architecture diagram in `CLAUDE.md`.
