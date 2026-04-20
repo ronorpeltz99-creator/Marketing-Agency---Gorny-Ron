@@ -79,7 +79,11 @@ export class AgentOrchestrator {
 
       // PHASE 4: Launch
       await this.updateStatus(testId, 'LAUNCHING');
-      const campaign = await this.meta.launchCampaign(storeResult.name, dailyBudget, creatives.ads);
+      const campaign = await this.meta.launchCampaign({ 
+        name: storeResult.name, 
+        budget: dailyBudget, 
+        objective: 'OUTCOME_SALES' 
+      });
 
       await this.updateStatus(testId, 'COMPLETED', { campaignId: campaign.id, storeUrl: storeResult.url });
       
