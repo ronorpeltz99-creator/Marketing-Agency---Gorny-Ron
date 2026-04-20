@@ -10,14 +10,31 @@ export async function getApiKey(serviceName: string): Promise<string | null> {
     .eq('service_name', serviceName)
     .single();
 
-  if (error || !data) {
-    return null;
+  if (!error && data) {
+    try {
+      return decrypt(data.encrypted_key);
+    } catch (err) {
+      console.error(`Failed to decrypt key for ${serviceName}:`, err);
+    }
   }
 
-  try {
-    return decrypt(data.encrypted_key);
-  } catch (err) {
-    console.error(`Failed to decrypt key for ${serviceName}:`, err);
-    return null;
+  // Fallback to Environment Variables for local development
+  const envMap: Record<string, string> = {
+    'anthropic': 'ANTHROPIC_API_KEY',
+    'serper': 'SERPER_API_KEY',
+    'shopify_token': 'SHOPIFY_PARTNER_API_TOKEN',
+    'higgsfield': 'HIGGSFIELD_API_KEY',
+    'meta_token': 'META_ACCESS_TOKEN',
+    'fal': 'FAL_KEY',
+    'fal_ai_key': 'FAL_KEY'
+  };
+
+  const envVarName = envMap[serviceName] || serviceName.toUpperCase();
+  const envKey = process.env[envVarName];
+
+  if (envKey && !envKey.includes('your-')) {
+    return envKey;
   }
+
+  return null;
 }

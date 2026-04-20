@@ -37,7 +37,7 @@ export class CreativeService {
 
     try {
       const response = await anthropic.messages.create({
-        model: 'claude-3-5-sonnet-20240620',
+        model: process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20240620',
         max_tokens: 1000,
         messages: [{ role: 'user', content: prompt }]
       });
@@ -75,36 +75,48 @@ export class CreativeService {
   }
 
   async generateImages(prompt: string) {
-    console.log(`[CreativeAgent] Generating high-end product visuals...`);
-    const falKey = await getApiKey('fal_ai_key');
+    console.log(`[CreativeAgent] Generating high-end product visuals using Higgsfield...`);
+    const higgsfieldKey = await getApiKey('higgsfield');
+    const higgsfieldSecret = process.env.HIGGSFIELD_API_SECRET;
+    const apiUrl = process.env.HIGGSFIELD_API_URL || 'https://api.higgsfield.ai';
     
-    if (!falKey) {
-      console.warn('[CreativeAgent] Fal.ai key missing. Using fallback image.');
+    if (!higgsfieldKey) {
+      console.warn('[CreativeAgent] Higgsfield key missing. Using fallback image.');
       return ['https://images.unsplash.com/photo-1523275335684-37898b6baf30'];
     }
 
     try {
-      const response = await fetch('https://fal.run/fal-ai/fast-lightning-sdxl', {
+      // Note: Endpoint and payload structure may vary based on Higgsfield's specific Image API
+      const response = await fetch(`${apiUrl}/v1/generate/image`, {
         method: 'POST',
         headers: {
-          'Authorization': `Key ${falKey}`,
+          'X-API-Key': higgsfieldKey,
+          'X-API-Secret': higgsfieldSecret || '',
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           prompt: prompt,
-          image_size: 'square_hd',
-          num_inference_steps: 4,
-          enable_safety_checker: true,
+          aspect_ratio: '1:1',
+          quality: 'high',
+          num_images: 1
         }),
       });
 
+      if (!response.ok) {
+        throw new Error(`Higgsfield API error: ${response.statusText}`);
+      }
+
       const result = await response.json();
+      // Adjust mapping based on Higgsfield's actual response structure
       if (result.images && result.images.length > 0) {
         return result.images.map((img: any) => img.url);
+      } else if (result.url) {
+        return [result.url];
       }
-      throw new Error('No images returned from Fal.ai');
+      
+      throw new Error('No images returned from Higgsfield');
     } catch (error) {
-      console.error('[CreativeAgent] Fal.ai error:', error);
+      console.error('[CreativeAgent] Higgsfield error:', error);
       return ['https://images.unsplash.com/photo-1523275335684-37898b6baf30'];
     }
   }

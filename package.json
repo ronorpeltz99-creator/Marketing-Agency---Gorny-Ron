@@ -6,13 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "trigger:dev": "npx trigger.dev@latest dev"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.90.0",
     "@base-ui/react": "^1.4.0",
     "@supabase/ssr": "^0.10.2",
     "@supabase/supabase-js": "^2.103.3",
+    "@trigger.dev/sdk": "^4.4.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "framer-motion": "^12.38.0",

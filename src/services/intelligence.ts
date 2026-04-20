@@ -21,7 +21,7 @@ export class IntelligenceService {
     // 1. Identify the product from the URL
     const identifyPrompt = `Extract the main product name and category from this URL: ${productUrl}. Return only the product name (e.g. "130,000 RPM Jet Fan").`;
     const idResponse = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20240620',
+      model: process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20240620',
       max_tokens: 50,
       messages: [{ role: 'user', content: identifyPrompt }]
     });
@@ -80,7 +80,7 @@ export class IntelligenceService {
     `;
 
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20240620',
+      model: process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20240620',
       max_tokens: 1500,
       messages: [{ role: 'user', content: analyzePrompt }]
     });
