@@ -48,6 +48,7 @@ interface StoreBuilderProps {
 export default function StoreBuilder({ productData }: StoreBuilderProps) {
   const [activeSubTab, setActiveSubTab] = useState<'products' | 'orders'>('products');
   const [isSaving, setIsSaving] = useState(false);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [storeProduct, setStoreProduct] = useState<StoreProduct>({
     title: productData?.title || '',
     price: '49.99',
