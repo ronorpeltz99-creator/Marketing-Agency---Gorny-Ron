@@ -8,6 +8,8 @@ import {
   CreditCard, RefreshCcw, ChevronRight, Eye, X, Upload
 } from 'lucide-react';
 
+import { createShopifyProductAction } from '@/app/actions/shopify';
+
 interface ProductData {
   title: string;
   price: string;
@@ -55,14 +57,26 @@ export default function StoreBuilder({ productData }: StoreBuilderProps) {
     images: productData?.images || []
   });
 
-  const [orders] = useState<Order[]>([
-    // Will be populated from Shopify webhooks
-  ]);
-
   const handleSave = async () => {
     setIsSaving(true);
-    // Will push to Shopify API
-    setTimeout(() => setIsSaving(false), 1500);
+    try {
+      const result = await createShopifyProductAction('your-store.myshopify.com', {
+        title: storeProduct.title,
+        description: `High-quality product: ${storeProduct.title}`,
+        price: storeProduct.price,
+        imageUrls: storeProduct.images
+      });
+      
+      if (result.success) {
+        alert('Product pushed to Shopify!');
+      } else {
+        alert(`Error: ${result.error}`);
+      }
+    } catch (err) {
+      alert('Failed to save to Shopify');
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const margin = storeProduct.price && storeProduct.costPerUnit

@@ -69,6 +69,28 @@ create table if not exists public.campaigns (
     performance_metrics jsonb default '{}'::jsonb
 );
 
+-- Active Tests (Turbo Pipeline Runs)
+create table if not exists public.active_tests (
+    id uuid default gen_random_uuid() primary key,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    product_url text not null,
+    daily_budget numeric(12, 2) not null,
+    status text default 'IDLE' check (status in ('IDLE', 'SCRAPING', 'SOURCING', 'BUILDING_STORE', 'GENERATING_CREATIVES', 'LAUNCHING_ADS', 'ACTIVE', 'COMPLETED', 'FAILED')),
+    metadata jsonb default '{}'::jsonb
+);
+
+-- api_keys (Secure storage for service credentials)
+create table if not exists public.api_keys (
+    id uuid default gen_random_uuid() primary key,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    updated_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    organization_id uuid references public.organizations(id) on delete cascade not null,
+    service_name text not null, -- e.g., 'shopify_token', 'meta_token', 'fal_ai_key'
+    encrypted_key text not null,
+    unique(organization_id, service_name)
+);
+
 -- 3. ROW LEVEL SECURITY (RLS)
 
 -- Enable RLS on all tables
@@ -77,6 +99,8 @@ alter table public.profiles enable row level security;
 alter table public.stores enable row level security;
 alter table public.products enable row level security;
 alter table public.campaigns enable row level security;
+alter table public.api_keys enable row level security;
+alter table public.active_tests enable row level security;
 
 -- 4. POLICIES
 
@@ -121,6 +145,18 @@ create policy "Users can access campaigns in organization" on public.campaigns
         )
     );
 
+-- Api Keys: Users can access keys in their organization
+create policy "Users can access keys in organization" on public.api_keys
+    for all using (
+        organization_id in (
+            select organization_id from public.profiles where profiles.id = auth.uid()
+        )
+    );
+
+-- Active Tests: For now, allowed for all authenticated users (can be narrowed later)
+create policy "Authenticated users can access tests" on public.active_tests
+    for all using (auth.role() = 'authenticated');
+
 -- 5. FUNCTIONS & TRIGGERS
 
 -- Function to handle updated_at
@@ -137,9 +173,10 @@ create trigger handle_updated_at_profiles before update on public.profiles for e
 create trigger handle_updated_at_stores before update on public.stores for each row execute procedure public.handle_updated_at();
 create trigger handle_updated_at_products before update on public.products for each row execute procedure public.handle_updated_at();
 create trigger handle_updated_at_campaigns before update on public.campaigns for each row execute procedure public.handle_updated_at();
+create trigger handle_updated_at_api_keys before update on public.api_keys for each row execute procedure public.handle_updated_at();
+create trigger handle_updated_at_active_tests before update on public.active_tests for each row execute procedure public.handle_updated_at();
 
 -- Function to automatically create a profile and organization on signup
--- Note: This is a simplified version. Usually, you'd handle organization creation separately.
 create or replace function public.handle_new_user()
 returns trigger as $$
 begin
@@ -148,8 +185,3 @@ begin
     return new;
 end;
 $$ language plpgsql;
-
--- Trigger for new user signup
--- create trigger on_auth_user_created
---     after insert on auth.users
---     for each row execute procedure public.handle_new_user();

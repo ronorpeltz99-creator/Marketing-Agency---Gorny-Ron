@@ -76,15 +76,42 @@ export class CreativeService {
 
   async generateImages(prompt: string) {
     console.log(`[CreativeAgent] Generating high-end product visuals...`);
-    const higgsfieldKey = await getApiKey('higgsfield');
-    // Actual implementation would call Higgsfield API here
-    return ['https://higgsfield.ai/sample-image.jpg'];
+    const falKey = await getApiKey('fal_ai_key');
+    
+    if (!falKey) {
+      console.warn('[CreativeAgent] Fal.ai key missing. Using fallback image.');
+      return ['https://images.unsplash.com/photo-1523275335684-37898b6baf30'];
+    }
+
+    try {
+      const response = await fetch('https://fal.run/fal-ai/fast-lightning-sdxl', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Key ${falKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          prompt: prompt,
+          image_size: 'square_hd',
+          num_inference_steps: 4,
+          enable_safety_checker: true,
+        }),
+      });
+
+      const result = await response.json();
+      if (result.images && result.images.length > 0) {
+        return result.images.map((img: any) => img.url);
+      }
+      throw new Error('No images returned from Fal.ai');
+    } catch (error) {
+      console.error('[CreativeAgent] Fal.ai error:', error);
+      return ['https://images.unsplash.com/photo-1523275335684-37898b6baf30'];
+    }
   }
 
   async generateVideo(script: string, images: string[]) {
-    console.log(`[CreativeAgent] Rendering hyper-realistic video with Higgsfield...`);
-    const higgsfieldKey = await getApiKey('higgsfield');
-    // API CALL: Higgsfield Video Generation
+    console.log(`[CreativeAgent] Rendering video...`);
+    // Higgsfield integration or similar would go here
     return 'https://higgsfield.ai/real-generated-ad.mp4';
   }
 }

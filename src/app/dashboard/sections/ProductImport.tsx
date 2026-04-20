@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link as LinkIcon, Package, Loader2, CheckCircle2, ImageIcon, DollarSign, Star, Truck, ExternalLink } from 'lucide-react';
+import { analyzeProductAction } from '@/app/actions/intelligence';
 
 interface ProductData {
   title: string;
@@ -13,6 +14,7 @@ interface ProductData {
   orders: string;
   shipping: string;
   url: string;
+  marketData?: any;
 }
 
 interface ProductImportProps {
@@ -30,30 +32,31 @@ export default function ProductImport({ onProductImported, productData }: Produc
       setError('Please paste a valid AliExpress product URL');
       return;
     }
-    if (!url.includes('aliexpress.com')) {
-      setError('URL must be from AliExpress');
-      return;
-    }
     setError('');
     setIsLoading(true);
 
     try {
-      // For now we extract what we can from the URL and use placeholder data
-      // This will be connected to a real scraping service
-      const mockProduct: ProductData = {
-        title: 'Imported Product from AliExpress',
-        price: '24.80',
-        images: [],
-        supplierName: 'Verified AliExpress Supplier',
-        supplierRating: '4.9',
-        orders: '18,450',
-        shipping: 'Free Shipping (12-15 Days)',
-        url: url
-      };
+      const result = await analyzeProductAction(url);
       
-      onProductImported(mockProduct);
-    } catch (err) {
-      setError('Failed to import product. Please try again.');
+      if (result.success && result.data) {
+        const data = result.data;
+        const mockProduct: ProductData = {
+          title: data.suggestedStoreName || 'Imported Product',
+          price: data.competitors?.[0]?.price?.replace('$', '') || '24.80',
+          images: [],
+          supplierName: 'AI Analyzed Supplier',
+          supplierRating: '4.9',
+          orders: '1,000+',
+          shipping: 'Standard Shipping',
+          url: url,
+          marketData: data
+        };
+        onProductImported(mockProduct);
+      } else {
+        throw new Error(result.error || 'Failed to analyze product');
+      }
+    } catch (err: any) {
+      setError(err.message || 'Failed to import product. Please try again.');
     } finally {
       setIsLoading(false);
     }

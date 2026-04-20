@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { generateCreativeImageAction } from '@/app/actions/creative';
 import {
   Film, Image as ImageIcon, Upload, Sparkles, Loader2, CheckCircle2,
   X, Play, GripVertical, Shuffle, Type, ChevronRight,
@@ -50,13 +51,19 @@ export default function AdsCreator() {
   };
 
   const handleRecreate = async () => {
-    if (!competitorImage || !productImage) return;
     setIsGenerating(true);
-    // This will call the image recreation model
-    setTimeout(() => {
-      setGeneratedImage('generated');
+    try {
+      const result = await generateCreativeImageAction('High-end lifestyle product photography for a premium brand, studio lighting, ultra-realistic');
+      if (result.success && result.images) {
+        setGeneratedImage(result.images[0]);
+      } else {
+        alert(`Error: ${result.error}`);
+      }
+    } catch (err) {
+      alert('Failed to generate image');
+    } finally {
       setIsGenerating(false);
-    }, 3000);
+    }
   };
 
   const handleGenerateVideo = async () => {

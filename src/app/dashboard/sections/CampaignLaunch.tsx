@@ -31,14 +31,43 @@ interface AutoRule {
   enabled: boolean;
 }
 
+import { launchCampaignAction } from '@/app/actions/meta';
+
 export default function CampaignLaunch() {
   const [activeSubTab, setActiveSubTab] = useState<'campaigns' | 'rules' | 'budget'>('campaigns');
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isLaunching, setIsLaunching] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
   const [selectedAdAccount, setSelectedAdAccount] = useState('');
   const [topUpAmount, setTopUpAmount] = useState('');
   const [campaignBudget, setCampaignBudget] = useState('50');
+
+  const handleLaunch = async () => {
+    if (!selectedAdAccount) {
+      alert('Please select an ad account');
+      return;
+    }
+    setIsLaunching(true);
+    try {
+      const result = await launchCampaignAction({
+        name: `Turbo Campaign - ${new Date().toLocaleDateString()}`,
+        budget: parseFloat(campaignBudget),
+        storeId: 'your-store-id', // Should be dynamic
+        productId: 'your-product-id' // Should be dynamic
+      });
+      
+      if (result.success) {
+        alert('Campaign launched on Meta!');
+      } else {
+        alert(`Error: ${result.error}`);
+      }
+    } catch (err) {
+      alert('Failed to launch campaign');
+    } finally {
+      setIsLaunching(false);
+    }
+  };
 
   const [campaigns] = useState<Campaign[]>([
     // Will be populated from Meta Ads API
@@ -140,8 +169,16 @@ export default function CampaignLaunch() {
                 </select>
               </div>
               <div className="flex items-end">
-                <button className="w-full py-3.5 rounded-xl bg-blue-600 text-white font-black text-[10px] uppercase tracking-widest hover:bg-blue-500 transition-all flex items-center justify-center gap-2">
-                  <Rocket className="w-4 h-4" /> Launch CBO Campaign
+                <button
+                  onClick={handleLaunch}
+                  disabled={isLaunching || !selectedAdAccount}
+                  className="w-full py-3.5 rounded-xl bg-blue-600 text-white font-black text-[10px] uppercase tracking-widest hover:bg-blue-500 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isLaunching ? (
+                    <><Loader2 className="w-4 h-4 animate-spin" /> Launching...</>
+                  ) : (
+                    <><Rocket className="w-4 h-4" /> Launch CBO Campaign</>
+                  )}
                 </button>
               </div>
             </div>
