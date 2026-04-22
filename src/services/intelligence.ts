@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { getApiKey } from '@/utils/keys';
+import { DsersService } from './dsers';
 
 /**
  * Intelligence Service - PRODUCTION READY
@@ -16,10 +17,14 @@ export class IntelligenceService {
       throw new Error('Missing API keys for research (serper or anthropic). Please configure them in the Command Center.');
     }
 
+    const dsers = new DsersService();
     const anthropic = new Anthropic({ apiKey: anthropicKey });
 
-    // 1. Identify the product from the URL
-    const identifyPrompt = `Extract the main product name and category from this URL: ${productUrl}. Return only the product name (e.g. "130,000 RPM Jet Fan").`;
+    // 1. Get real product data from supplier
+    const supplierData = await dsers.findBestSupplier(productUrl);
+
+    // 2. Identify the product from the URL (use supplier title if available)
+    const identifyPrompt = `Extract the main product name and category from this URL: ${productUrl}. ${supplierData.title ? `Context: Supplier title is "${supplierData.title}"` : ''} Return only the product name (e.g. "130,000 RPM Jet Fan").`;
     const idResponse = await anthropic.messages.create({
       model: process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20240620',
       max_tokens: 50,
@@ -28,7 +33,7 @@ export class IntelligenceService {
 
     const productName = idResponse.content[0].type === 'text' ? idResponse.content[0].text.trim() : 'this product';
 
-    // 2. Search for competitors
+    // 3. Search for competitors
     const searchQuery = `"${productName}" shopify store competitors price facebook ads`;
     console.log(`[IntelAgent] Searching for: ${searchQuery}`);
 
@@ -43,7 +48,7 @@ export class IntelligenceService {
     
     const searchData = await searchResponse.json();
 
-    // 3. Analyze results with Claude to extract structured data
+    // 4. Analyze results with Claude to extract structured data
     const analyzePrompt = `
       You are an expert E-commerce Market Researcher. 
       Analyze the following search results for the product: ${productName} (URL: ${productUrl}).
@@ -95,7 +100,12 @@ export class IntelligenceService {
       result.competitors = result.competitors.map((c: any, i: number) => ({ ...c, id: 101 + i }));
       result.winningHooks = result.winningHooks.map((h: any, i: number) => ({ ...h, id: 201 + i }));
       
-      return result;
+      // Merge with real supplier data
+      return {
+        ...result,
+        supplier: supplierData,
+        productName: productName
+      };
     } catch (err) {
       console.error('Failed to parse Claude analysis:', textContent);
       throw new Error('Failed to generate structured market data from AI analysis.');

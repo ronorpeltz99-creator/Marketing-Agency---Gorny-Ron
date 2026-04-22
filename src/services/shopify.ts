@@ -135,4 +135,51 @@ export class ShopifyService {
     // Real implementation would use Asset API to upload liquid/css files
     return { success: true, themeId: 'dawn_v12' };
   }
+
+  /**
+   * Creates a new theme for the store.
+   */
+  async createTheme(storeDomain: string, name: string) {
+    const headers = await this.getHeaders(storeDomain);
+    const response = await fetch(`https://${storeDomain}/admin/api/2024-01/themes.json`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        theme: {
+          name,
+          src: 'https://github.com/Shopify/dawn/archive/refs/heads/main.zip', // Default to Dawn
+          role: 'main'
+        }
+      }),
+    });
+
+    const result = await response.json();
+    if (result.errors) {
+      throw new Error(JSON.stringify(result.errors));
+    }
+    return result.theme;
+  }
+
+  /**
+   * Uploads an asset (liquid, css, etc.) to a specific theme.
+   */
+  async uploadAsset(storeDomain: string, themeId: string, asset: { key: string; value: string }) {
+    const headers = await this.getHeaders(storeDomain);
+    const response = await fetch(`https://${storeDomain}/admin/api/2024-01/themes/${themeId}/assets.json`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({
+        asset: {
+          key: asset.key,
+          value: asset.value
+        }
+      }),
+    });
+
+    const result = await response.json();
+    if (result.errors) {
+      throw new Error(JSON.stringify(result.errors));
+    }
+    return result.asset;
+  }
 }

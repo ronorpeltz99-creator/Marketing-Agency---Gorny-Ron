@@ -34,24 +34,26 @@ export default function ProductImport({ onProductImported, productData }: Produc
     }
     setError('');
     setIsLoading(true);
-
+ 
     try {
       const result = await analyzeProductAction(url);
       
       if (result.success && result.data) {
         const data = result.data;
-        const mockProduct: ProductData = {
-          title: data.suggestedStoreName || 'Imported Product',
-          price: data.competitors?.[0]?.price?.replace('$', '') || '24.80',
-          images: [],
-          supplierName: 'AI Analyzed Supplier',
-          supplierRating: '4.9',
-          orders: '1,000+',
-          shipping: 'Standard Shipping',
+        const supplier = data.supplier || {};
+        
+        const importedProduct: ProductData = {
+          title: supplier.title || data.suggestedStoreName || 'Imported Product',
+          price: supplier.price || '24.80',
+          images: supplier.images || [],
+          supplierName: supplier.name || 'AliExpress Supplier',
+          supplierRating: supplier.rating || '4.9',
+          orders: supplier.orders || '1,000+',
+          shipping: supplier.shipping || 'Standard Shipping',
           url: url,
           marketData: data
         };
-        onProductImported(mockProduct);
+        onProductImported(importedProduct);
       } else {
         throw new Error(result.error || 'Failed to analyze product');
       }

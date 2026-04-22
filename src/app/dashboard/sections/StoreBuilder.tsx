@@ -47,21 +47,37 @@ interface StoreBuilderProps {
 
 export default function StoreBuilder({ productData }: StoreBuilderProps) {
   const [activeSubTab, setActiveSubTab] = useState<'products' | 'orders'>('products');
-  const [isSaving, setIsSaving] = useState(false);
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [storeProduct, setStoreProduct] = useState<StoreProduct>({
-    title: productData?.title || '',
-    price: '49.99',
-    comparePrice: '89.99',
-    costPerUnit: productData?.price || '24.80',
-    isPhysical: true,
-    images: productData?.images || []
-  });
+  const [storeInfo, setStoreInfo] = useState<{ domain: string; name: string } | null>(null);
+  const [isCreatingStore, setIsCreatingStore] = useState(false);
+  const [newStoreName, setNewStoreName] = useState('');
+
+  const handleCreateStore = async () => {
+    if (!newStoreName) return;
+    setIsCreatingStore(true);
+    try {
+      const { createStoreAction } = await import('@/app/actions/shopify');
+      const result = await createStoreAction(newStoreName);
+      if (result.success && result.store) {
+        setStoreInfo({ domain: result.store.domain, name: result.store.name });
+        alert(`Store created: ${result.store.url}`);
+      } else {
+        alert(`Failed to create store: ${result.error}`);
+      }
+    } catch (err) {
+      alert('Error creating store');
+    } finally {
+      setIsCreatingStore(false);
+    }
+  };
 
   const handleSave = async () => {
+    if (!storeInfo) {
+      alert('Please create or link a store first');
+      return;
+    }
     setIsSaving(true);
     try {
-      const result = await createShopifyProductAction('your-store.myshopify.com', {
+      const result = await createShopifyProductAction(storeInfo.domain, {
         title: storeProduct.title,
         description: `High-quality product: ${storeProduct.title}`,
         price: storeProduct.price,
@@ -97,6 +113,35 @@ export default function StoreBuilder({ productData }: StoreBuilderProps) {
           Manage your Shopify store, products, pricing, and orders — all from here.
         </p>
       </header>
+
+      {!storeInfo && (
+        <div className="p-10 rounded-[40px] bg-zinc-950 border border-white/5 space-y-6">
+          <h2 className="text-[10px] font-black uppercase text-zinc-500 tracking-[0.3em] flex items-center gap-2">
+            <Store className="w-4 h-4 text-indigo-400" /> Initial Store Setup
+          </h2>
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Brand / Organization Name</label>
+            <div className="flex gap-4">
+              <input
+                type="text"
+                value={newStoreName}
+                onChange={(e) => setNewStoreName(e.target.value)}
+                placeholder="e.g. TurboJet"
+                className="flex-1 bg-white/5 border border-white/10 rounded-2xl py-4 px-5 text-sm font-bold focus:border-indigo-500 focus:outline-none transition-all"
+              />
+              <button
+                onClick={handleCreateStore}
+                disabled={isCreatingStore || !newStoreName}
+                className="px-8 py-4 rounded-2xl bg-white text-black font-black text-xs uppercase tracking-widest hover:bg-zinc-200 transition-all disabled:opacity-50 flex items-center gap-2"
+              >
+                {isCreatingStore ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                Create Dev Store
+              </button>
+            </div>
+            <p className="text-[10px] text-zinc-600">This will create a new Shopify development store via Partner API.</p>
+          </div>
+        </div>
+      )}
 
       {!productData ? (
         <div className="p-20 rounded-[40px] bg-zinc-950 border border-white/5 text-center">

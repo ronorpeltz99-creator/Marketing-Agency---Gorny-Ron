@@ -3,6 +3,25 @@
 import { ShopifyService } from '@/services/shopify';
 import { createClient } from '@/utils/supabase/server';
 
+export async function createStoreAction(organizationName: string) {
+  const shopify = new ShopifyService();
+  try {
+    const result = await shopify.createStore(organizationName);
+    
+    // Auto-create theme as per product vision
+    try {
+      await shopify.createTheme(result.domain, `${organizationName} Premium Theme`);
+    } catch (themeError) {
+      console.warn('[Action] Theme creation failed (non-critical):', themeError);
+    }
+    
+    return { success: true, store: result };
+  } catch (error: any) {
+    console.error('[Action] Store creation failed:', error);
+    return { success: false, error: error.message };
+  }
+}
+
 export async function createShopifyProductAction(storeDomain: string, product: { title: string; description: string; price: string; imageUrls: string[] }) {
   const shopify = new ShopifyService();
   const supabase = await createClient();
