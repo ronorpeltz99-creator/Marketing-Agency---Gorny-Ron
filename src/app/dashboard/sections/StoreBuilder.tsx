@@ -47,7 +47,9 @@ interface StoreBuilderProps {
 
 export default function StoreBuilder({ productData }: StoreBuilderProps) {
   const [activeSubTab, setActiveSubTab] = useState<'products' | 'orders'>('products');
-  const [storeInfo, setStoreInfo] = useState<{ domain: string; name: string } | null>(null);
+  const [storeInfo, setStoreInfo] = useState<{ domain: string; name: string } | null>(
+    (productData as any)?.storeInfo ? { domain: (productData as any).storeInfo.domain, name: (productData as any).storeInfo.name } : null
+  );
   const [isCreatingStore, setIsCreatingStore] = useState(false);
   const [newStoreName, setNewStoreName] = useState('');
 
@@ -69,6 +71,19 @@ export default function StoreBuilder({ productData }: StoreBuilderProps) {
       setIsCreatingStore(false);
     }
   };
+
+  useEffect(() => {
+    if (storeInfo?.domain) {
+      const fetchOrders = async () => {
+        const { getOrdersAction } = await import('@/app/actions/shopify');
+        const result = await getOrdersAction(storeInfo.domain);
+        if (result.success && result.orders) {
+          setOrders(result.orders);
+        }
+      };
+      fetchOrders();
+    }
+  }, [storeInfo?.domain]);
 
   const handleSave = async () => {
     if (!storeInfo) {

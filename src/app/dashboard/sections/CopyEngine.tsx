@@ -34,18 +34,20 @@ export default function CopyEngine({ audienceData }: CopyEngineProps) {
 
   const handleGenerate = async () => {
     setMode('generating');
-    // This will use the copywriting skill + Anthropic API
-    setTimeout(() => {
-      setGeneratedCopy({
-        headline: 'Dry Your Entire Car In Under 3 Minutes — Without Touching The Paint.',
-        subheadline: 'The 130,000 RPM pocket-sized turbine that professional detailers are switching to.',
-        aboveFold: 'You know that feeling when you spend 30 minutes hand-drying your car — only to find watermarks and scratches everywhere?\n\nWhat if there was a way to blast every single droplet off your car in under 3 minutes, without ever touching the paint?\n\nIntroducing the TurboJet Pro — the world\'s most powerful cordless air blower, built for people who actually care about their car.',
-        belowFold: '✅ 130,000 RPM turbine engine — more powerful than compressed air\n✅ 4 speed settings with LED display\n✅ Cordless & rechargeable — lasts 45+ minutes per charge\n✅ Weighs only 1.2 lbs — fits in your glove box\n✅ Works on cars, bikes, keyboards, workshops\n\nStop wasting money on expensive compressed air. Stop scratching your paint with towels.\n\nThe TurboJet Pro pays for itself after 2 uses.',
-        cta: 'Get Yours Before They\'re Gone — 50% OFF Launch Price',
-        socialProof: '⭐⭐⭐⭐⭐ "I\'ve tried MetroVac and 3 other blowers. This one is genuinely the best." — Mike R., Professional Detailer'
-      });
-      setMode('done');
-    }, 4000);
+    try {
+      const { generateCopyAction } = await import('@/app/actions/intelligence');
+      const result = await generateCopyAction(audienceData, answers);
+      
+      if (result.success && result.data) {
+        setGeneratedCopy(result.data);
+        setMode('done');
+      } else {
+        throw new Error(result.error || 'Failed to generate copy');
+      }
+    } catch (err) {
+      alert('Generation failed. Please check your API keys.');
+      setMode('questions');
+    }
   };
 
   if (!audienceData) {

@@ -53,6 +53,27 @@ export default function ProductImport({ onProductImported, productData }: Produc
           url: url,
           marketData: data
         };
+
+        // AUTO-CREATE STORE & PUSH PRODUCT
+        try {
+          const { createStoreAction, createShopifyProductAction } = await import('@/app/actions/shopify');
+          const storeResult = await createStoreAction(data.suggestedStoreName || 'My New Brand');
+          
+          if (storeResult.success && storeResult.store) {
+             (importedProduct as any).storeInfo = storeResult.store;
+             
+             // Push product to the new store
+             await createShopifyProductAction(storeResult.store.domain, {
+               title: importedProduct.title,
+               description: `High-conversion product: ${importedProduct.title}. Sourced from AliExpress.`,
+               price: importedProduct.price,
+               imageUrls: importedProduct.images
+             });
+          }
+        } catch (storeErr) {
+          console.warn('Auto-setup failed:', storeErr);
+        }
+
         onProductImported(importedProduct);
       } else {
         throw new Error(result.error || 'Failed to analyze product');

@@ -15,32 +15,96 @@ export class MetaAdsService {
   }
 
   /**
-   * Launches a full campaign pipeline on Meta.
+   * Fetches available ad accounts for the user.
    */
-  async launchCampaign(params: { name: string; budget: number; objective: string }) {
+  async fetchAdAccounts() {
+    const accessToken = await this.getAccessToken();
+    if (!accessToken) return [];
+    
+    try {
+      const response = await fetch(`https://graph.facebook.com/v19.0/me/adaccounts?fields=name,account_id&access_token=${accessToken}`);
+      const result = await response.json();
+      return result.data || [];
+    } catch (error) {
+      console.error('[MetaAdsService] Error fetching ad accounts:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Launches a full campaign hierarchy (Campaign -> Ad Set -> Ad).
+   */
+  async launchFullCampaign(params: { 
+    name: string; 
+    budget: number; 
+    creatives: string[];
+    pixelId?: string;
+  }) {
     const accessToken = await this.getAccessToken();
     const baseUrl = await this.getBaseUrl();
 
     try {
-      const response = await fetch(`${baseUrl}/campaigns`, {
+      // 1. Create Campaign (CBO)
+      const campaignResponse = await fetch(`${baseUrl}/campaigns`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: params.name,
-          objective: params.objective || 'OUTCOME_SALES',
-          status: 'PAUSED', // Start as paused for safety
+          objective: 'OUTCOME_SALES',
+          daily_budget: params.budget * 100, // Cents
+          bid_strategy: 'LOWEST_COST_WITHOUT_CAP',
+          status: 'PAUSED',
           special_ad_categories: 'NONE',
           access_token: accessToken,
         }),
       });
+      const campaign = await campaignResponse.json();
+      if (campaign.error) throw new Error(campaign.error.message);
 
-      const result = await response.json();
-      if (result.error) throw new Error(result.error.message);
-      
-      console.log(`[MetaAgent] Created campaign: ${result.id}`);
-      return result;
+      // 2. Create Ad Set (Broad targeting example)
+      const adSetResponse = await fetch(`${baseUrl}/adsets`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: `${params.name} - Broad AdSet`,
+          campaign_id: campaign.id,
+          optimization_goal: 'OFFSITE_CONVERSIONS',
+          billing_event: 'IMPRESSIONS',
+          bid_amount: 100,
+          status: 'PAUSED',
+          targeting: { geo_locations: { countries: ['US'] } },
+          access_token: accessToken,
+        }),
+      });
+      const adSet = await adSetResponse.json();
+      if (adSet.error) throw new Error(adSet.error.message);
+
+      // 3. Create Ads (for each creative)
+      for (const creativeUrl of params.creatives) {
+        await fetch(`${baseUrl}/ads`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: `Ad - ${params.name}`,
+            adset_id: adSet.id,
+            creative: {
+              object_story_spec: {
+                link_data: {
+                  link: 'https://myshopify.com', // Should be the store URL
+                  message: 'Get this amazing product now!',
+                  picture: creativeUrl
+                }
+              }
+            },
+            status: 'PAUSED',
+            access_token: accessToken,
+          }),
+        });
+      }
+
+      return { success: true, campaignId: campaign.id };
     } catch (error: any) {
-      console.error('[MetaAdsService] Error launching campaign:', error);
+      console.error('[MetaAdsService] Full launch failed:', error);
       throw error;
     }
   }

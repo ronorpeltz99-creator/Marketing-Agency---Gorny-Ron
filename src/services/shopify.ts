@@ -182,4 +182,38 @@ export class ShopifyService {
     }
     return result.asset;
   }
+
+  /**
+   * Fetches the latest orders for a store.
+   */
+  async fetchOrders(shopDomain: string) {
+    const accessToken = await getApiKey('shopify_token');
+    if (!accessToken) return [];
+
+    try {
+      const response = await fetch(`https://${shopDomain}/admin/api/2024-04/orders.json?status=any`, {
+        method: 'GET',
+        headers: {
+          'X-Shopify-Access-Token': accessToken,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.errors || 'Failed to fetch orders');
+
+      return (result.orders || []).map((o: any) => ({
+        id: o.id.toString(),
+        customerName: `${o.customer?.first_name || 'Guest'} ${o.customer?.last_name || ''}`,
+        email: o.email || 'N/A',
+        product: o.line_items?.[0]?.title || 'Multiple Items',
+        amount: o.total_price,
+        status: o.fulfillment_status === 'fulfilled' ? 'fulfilled' : 'pending',
+        date: new Date(o.created_at).toLocaleDateString()
+      }));
+    } catch (error) {
+      console.error('[ShopifyService] Error fetching orders:', error);
+      return [];
+    }
+  }
 }

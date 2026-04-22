@@ -46,14 +46,16 @@ export default function AdsCreator() {
   const [selectedForMix, setSelectedForMix] = useState<string[]>([]);
 
   const handleImageUpload = (setter: (url: string) => void) => {
-    // Simulated upload
-    setter('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect fill="%23333" width="400" height="400"/><text fill="%23999" x="200" y="200" text-anchor="middle" dy=".3em" font-size="14">Uploaded Image</text></svg>');
+    const url = prompt('Enter image URL:');
+    if (url) setter(url);
   };
 
   const handleRecreate = async () => {
+    if (!competitorImage || !productImage) return;
     setIsGenerating(true);
     try {
-      const result = await generateCreativeImageAction('High-end lifestyle product photography for a premium brand, studio lighting, ultra-realistic');
+      const { recreateAdImageAction } = await import('@/app/actions/creative');
+      const result = await recreateAdImageAction(competitorImage, productImage);
       if (result.success && result.images) {
         setGeneratedImage(result.images[0]);
       } else {
@@ -69,11 +71,19 @@ export default function AdsCreator() {
   const handleGenerateVideo = async () => {
     if (!starterImage || !videoType) return;
     setIsGenerating(true);
-    // This will call the video generation model with the appropriate skill
-    setTimeout(() => {
-      setGeneratedVideo('generated');
+    try {
+      const { generateVideoClipAction } = await import('@/app/actions/creative');
+      const result = await generateVideoClipAction(starterImage, videoType);
+      if (result.success && result.url) {
+        setGeneratedVideo(result.url);
+      } else {
+        alert(`Error: ${result.error}`);
+      }
+    } catch (err) {
+      alert('Failed to generate video');
+    } finally {
       setIsGenerating(false);
-    }, 4000);
+    }
   };
 
   const approveImage = () => {

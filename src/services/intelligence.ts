@@ -111,4 +111,103 @@ export class IntelligenceService {
       throw new Error('Failed to generate structured market data from AI analysis.');
     }
   }
+
+  /**
+   * Identifies the target audience based on product details or questionnaire answers.
+   */
+  async identifyAudience(answers: Record<string, string>) {
+    const anthropicKey = await getApiKey('anthropic');
+    if (!anthropicKey) throw new Error('Missing Anthropic API Key');
+
+    const anthropic = new Anthropic({ apiKey: anthropicKey });
+
+    const prompt = `
+      You are an expert Direct Response Marketer and Customer Research Specialist.
+      Based on the following information about a product, identify the ideal target audience.
+      
+      Product Information:
+      ${JSON.stringify(answers, null, 2)}
+      
+      Task:
+      1. Define the specific target audience (be narrow and specific).
+      2. List 3 deep core desires this audience has that this product solves.
+      3. List 3 urgent pain points this audience faces.
+      4. Define the primary demographics (Age, Gender, Income, Interests).
+      5. Identify the "Niche" name.
+      
+      Return ONLY a valid JSON object in this exact format:
+      {
+        "productName": "Name",
+        "targetAudience": "Audience Description",
+        "niche": "Niche Name",
+        "desires": ["Desire 1", "Desire 2", "Desire 3"],
+        "painPoints": ["Pain 1", "Pain 2", "Pain 3"],
+        "demographics": "Detailed demographics string"
+      }
+    `;
+
+    const response = await anthropic.messages.create({
+      model: process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20240620',
+      max_tokens: 1000,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    const textContent = response.content[0].type === 'text' ? response.content[0].text : '';
+    const jsonMatch = textContent.match(/\{[\s\S]*\}/);
+    return jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(textContent);
+  }
+
+  /**
+   * Generates high-converting direct-response copy for the landing page.
+   */
+  async generateCopy(audienceData: any, answers: Record<string, string>) {
+    const anthropicKey = await getApiKey('anthropic');
+    if (!anthropicKey) throw new Error('Missing Anthropic API Key');
+
+    const anthropic = new Anthropic({ apiKey: anthropicKey });
+
+    const prompt = `
+      You are a World-Class Direct Response Copywriter (think Eugene Schwartz, Gary Halbert).
+      Your goal is to write a high-converting sales page for the following product and audience.
+      
+      Audience Profile:
+      ${JSON.stringify(audienceData, null, 2)}
+      
+      Brand/Product Details:
+      ${JSON.stringify(answers, null, 2)}
+      
+      Task:
+      1. Write a massive, attention-grabbing HEADLINE.
+      2. Write a compelling SUBHEADLINE that reinforces the promise.
+      3. Write "ABOVE THE FOLD" copy (the hook and initial pitch).
+      4. Write "BELOW THE FOLD" copy (features, benefits, and logic).
+      5. Write a strong CALL TO ACTION (CTA).
+      6. Write a convincing SOCIAL PROOF snippet.
+      
+      Requirements:
+      - Use psychological triggers (urgency, scarcity, fear of missing out, or extreme benefit).
+      - Focus on the Transformation (Before vs After).
+      - Use simple, punchy language. No "corporate speak".
+      
+      Return ONLY a valid JSON object in this exact format:
+      {
+        "headline": "Headline text",
+        "subheadline": "Subheadline text",
+        "aboveFold": "Multiple paragraphs of hook copy",
+        "belowFold": "Bullet points and benefits",
+        "cta": "CTA Button Text",
+        "socialProof": "Testimonial or proof string"
+      }
+    `;
+
+    const response = await anthropic.messages.create({
+      model: process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20240620',
+      max_tokens: 2000,
+      messages: [{ role: 'user', content: prompt }]
+    });
+
+    const textContent = response.content[0].type === 'text' ? response.content[0].text : '';
+    const jsonMatch = textContent.match(/\{[\s\S]*\}/);
+    return jsonMatch ? JSON.parse(jsonMatch[0]) : JSON.parse(textContent);
+  }
 }

@@ -39,9 +39,21 @@ export default function CampaignLaunch() {
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [isLaunching, setIsLaunching] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<string | null>(null);
+  const [adAccounts, setAdAccounts] = useState<any[]>([]);
   const [selectedAdAccount, setSelectedAdAccount] = useState('');
   const [topUpAmount, setTopUpAmount] = useState('');
   const [campaignBudget, setCampaignBudget] = useState('50');
+
+  useState(() => {
+    const fetchAccounts = async () => {
+      const { fetchAdAccountsAction } = await import('@/app/actions/meta');
+      const result = await fetchAdAccountsAction();
+      if (result.success && result.accounts) {
+        setAdAccounts(result.accounts);
+      }
+    };
+    fetchAccounts();
+  });
 
   const handleLaunch = async () => {
     if (!selectedAdAccount) {
@@ -165,7 +177,9 @@ export default function CampaignLaunch() {
                   className="w-full bg-white/5 border border-white/10 rounded-xl py-3.5 px-4 text-sm font-bold text-white focus:border-indigo-500 focus:outline-none appearance-none"
                 >
                   <option value="">Select ad account...</option>
-                  <option value="act_123">Main Ad Account</option>
+                  {adAccounts.map(acc => (
+                    <option key={acc.account_id} value={acc.account_id}>{acc.name}</option>
+                  ))}
                 </select>
               </div>
               <div className="flex items-end">

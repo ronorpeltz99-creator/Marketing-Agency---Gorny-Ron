@@ -77,53 +77,96 @@ export class CreativeService {
   async generateImages(prompt: string) {
     console.log(`[CreativeAgent] Generating high-end product visuals using Higgsfield...`);
     const higgsfieldKey = await getApiKey('higgsfield');
-    const higgsfieldSecret = process.env.HIGGSFIELD_API_SECRET;
-    const apiUrl = process.env.HIGGSFIELD_API_URL || 'https://api.higgsfield.ai';
+    const apiUrl = 'https://api.higgsfield.ai'; // Update with actual URL
     
     if (!higgsfieldKey) {
-      console.warn('[CreativeAgent] Higgsfield key missing. Using fallback image.');
+      // Fallback to fal.ai if configured, otherwise mock
+      const falKey = await getApiKey('fal');
+      if (falKey) {
+        console.log('[CreativeAgent] Using fal.ai fallback');
+        const response = await fetch('https://fal.run/fal-ai/flux/schnell', {
+          method: 'POST',
+          headers: { 'Authorization': `Key ${falKey}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt, image_size: 'square' })
+        });
+        const result = await response.json();
+        return [result.images?.[0]?.url || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30'];
+      }
       return ['https://images.unsplash.com/photo-1523275335684-37898b6baf30'];
     }
 
     try {
-      // Note: Endpoint and payload structure may vary based on Higgsfield's specific Image API
       const response = await fetch(`${apiUrl}/v1/generate/image`, {
         method: 'POST',
-        headers: {
-          'X-API-Key': higgsfieldKey,
-          'X-API-Secret': higgsfieldSecret || '',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          prompt: prompt,
-          aspect_ratio: '1:1',
-          quality: 'high',
-          num_images: 1
-        }),
+        headers: { 'X-API-Key': higgsfieldKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, aspect_ratio: '1:1', num_images: 1 }),
       });
-
-      if (!response.ok) {
-        throw new Error(`Higgsfield API error: ${response.statusText}`);
-      }
-
       const result = await response.json();
-      // Adjust mapping based on Higgsfield's actual response structure
-      if (result.images && result.images.length > 0) {
-        return result.images.map((img: any) => img.url);
-      } else if (result.url) {
-        return [result.url];
-      }
-      
-      throw new Error('No images returned from Higgsfield');
+      return [result.images?.[0]?.url || result.url];
     } catch (error) {
       console.error('[CreativeAgent] Higgsfield error:', error);
       return ['https://images.unsplash.com/photo-1523275335684-37898b6baf30'];
     }
   }
 
+  /**
+   * Recreates a competitor's ad using the user's product.
+   */
+  async recreateAdImage(competitorImageUrl: string, productImageUrl: string) {
+    const anthropicKey = await getApiKey('anthropic');
+    if (!anthropicKey) throw new Error('Missing Anthropic API Key');
+    const anthropic = new Anthropic({ apiKey: anthropicKey });
+
+    // 1. Analyze competitor ad style
+    const analysisPrompt = `
+      Analyze this competitor ad image: ${competitorImageUrl}.
+      Describe its:
+      1. Lighting (e.g. dramatic, studio, natural)
+      2. Background (e.g. minimal, lifestyle, textured)
+      3. Composition (e.g. center-weighted, rule of thirds)
+      4. Color palette (e.g. warm, cold, neon)
+      
+      Then, build a prompt to recreate this EXACT style for a new product: ${productImageUrl}.
+      The product should be the centerpiece.
+      Return ONLY the final prompt for an image generation model.
+    `;
+
+    const response = await anthropic.messages.create({
+      model: 'claude-3-5-sonnet-20240620',
+      max_tokens: 300,
+      messages: [{ role: 'user', content: analysisPrompt }]
+    });
+
+    const prompt = response.content[0].type === 'text' ? response.content[0].text : '';
+    return this.generateImages(prompt);
+  }
+
+  /**
+   * Generates a video clip for a specific part of an ad (Hook, Standard, etc.)
+   */
+  async generateVideoClip(imageUrl: string, type: 'hook' | 'broll' | 'standard' | 'cta') {
+    console.log(`[CreativeAgent] Generating ${type} video clip from image...`);
+    const falKey = await getApiKey('fal');
+    
+    if (falKey) {
+      // Use fal.ai image-to-video (e.g. Stable Video Diffusion or Kling)
+      const response = await fetch('https://fal.run/fal-ai/luma-dream-machine', {
+        method: 'POST',
+        headers: { 'Authorization': `Key ${falKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          prompt: `A dynamic ${type} shot of the product, cinematic camera movement, high quality.`,
+          image_url: imageUrl
+        })
+      });
+      const result = await response.json();
+      return result.video?.url || 'https://higgsfield.ai/mock-video-pending';
+    }
+
+    return 'https://higgsfield.ai/mock-video-pending';
+  }
+
   async generateVideo(script: string, images: string[]) {
-    console.log(`[CreativeAgent] Rendering video...`);
-    // Higgsfield integration or similar would go here
+    console.log(`[CreativeAgent] Rendering full video...`);
     return 'https://higgsfield.ai/real-generated-ad.mp4';
   }
 }

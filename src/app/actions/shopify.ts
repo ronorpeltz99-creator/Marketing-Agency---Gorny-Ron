@@ -51,3 +51,14 @@ export async function createShopifyProductAction(storeDomain: string, product: {
     return { success: false, error: error.message };
   }
 }
+
+export async function getOrdersAction(shopDomain: string) {
+  const shopify = new ShopifyService();
+  try {
+    const orders = await shopify.fetchOrders(shopDomain);
+    return { success: true, orders };
+  } catch (error: any) {
+    console.error('[Action] Fetch orders failed:', error);
+    return { success: false, error: error.message };
+  }
+}

@@ -56,19 +56,20 @@ export default function AudienceIntel({ onAudienceIdentified, audienceData }: Au
 
   const analyzeData = async () => {
     setMode('analyzing');
-    // This will call the AI analysis skill
-    setTimeout(() => {
-      const result: AudienceData = {
-        productName: answers.product_name || 'Product',
-        targetAudience: answers.target_audience || 'General audience',
-        niche: answers.niche || 'E-commerce',
-        desires: [answers.main_desire || 'Quality product'],
-        painPoints: (answers.pain_points || '').split(',').map(s => s.trim()),
-        demographics: 'Male 25-45, income $50K+, urban areas'
-      };
-      onAudienceIdentified(result);
-      setMode('done');
-    }, 3000);
+    try {
+      const { identifyAudienceAction } = await import('@/app/actions/intelligence');
+      const result = await identifyAudienceAction(answers);
+      
+      if (result.success && result.data) {
+        onAudienceIdentified(result.data);
+        setMode('done');
+      } else {
+        throw new Error(result.error || 'Failed to analyze audience');
+      }
+    } catch (err) {
+      alert('Analysis failed. Please check your API keys.');
+      setMode('choose');
+    }
   };
 
   return (
