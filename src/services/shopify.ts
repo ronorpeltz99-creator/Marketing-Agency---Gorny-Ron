@@ -14,19 +14,64 @@ export class ShopifyService {
   }
 
   /**
-   * Creates a new development store using the Shopify Partner API.
-   * Note: This usually requires a Partner API key and organization ID.
+   * Creates a new development store using the Shopify Partner GraphQL API.
    */
   async createStore(organizationName: string) {
-    const shopifyName = await getApiKey('shopify_name');
-    console.log(`[ShopifyAgent] Creating dev store for: ${organizationName}`);
-    
-    // In a real implementation, this would call the Shopify Partner GraphQL API
-    // Since Partner API setup is complex, we return the expected structure
-    return { 
-      id: `store_${Math.random().toString(36).substr(2, 9)}`, 
-      name: `${organizationName}-Official`,
-      url: `https://${shopifyName || organizationName.toLowerCase().replace(/ /g, '-')}.myshopify.com`,
+    const partnerToken = await getApiKey('shopify_partner_token');
+    const orgId = await getApiKey('shopify_partner_org_id');
+
+    if (!partnerToken || !orgId) {
+      throw new Error('Missing SHOPIFY_PARTNER_API_TOKEN or SHOPIFY_PARTNER_ORG_ID');
+    }
+
+    const storeName = organizationName.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    const query = `
+      mutation {
+        shopCreate(input: {
+          name: "${organizationName} Dev Store",
+          plan: "developer_preview"
+        }) {
+          shop {
+            id
+            name
+            myshopifyDomain
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `;
+
+    const response = await fetch(
+      `https://partners.shopify.com/${orgId}/api/2024-01/graphql.json`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Shopify-Access-Token': partnerToken,
+        },
+        body: JSON.stringify({ query }),
+      }
+    );
+
+    const result = await response.json();
+
+    if (result.data?.shopCreate?.userErrors?.length > 0) {
+      throw new Error(result.data.shopCreate.userErrors[0].message);
+    }
+
+    const shop = result.data?.shopCreate?.shop;
+    if (!shop) {
+      throw new Error(`Partner API error: ${JSON.stringify(result)}`);
+    }
+
+    return {
+      id: shop.id,
+      name: shop.name,
+      url: `https://${shop.myshopifyDomain}`,
+      domain: shop.myshopifyDomain,
     };
   }
 
