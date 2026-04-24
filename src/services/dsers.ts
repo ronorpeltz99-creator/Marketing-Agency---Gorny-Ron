@@ -3,13 +3,19 @@ export class DsersService {
    * Scrapes an AliExpress product page to extract real data.
    */
   async findBestSupplier(aliexpressUrl: string) {
-    console.log(`[SourcingAgent] SCRAPING REAL DATA FROM: ${aliexpressUrl}`);
+    // Sanitize URL to remove tracking parameters
+    const sanitizedUrl = aliexpressUrl.split('?')[0];
+    console.log(`[SourcingAgent] SCRAPING REAL DATA FROM: ${sanitizedUrl}`);
     
     try {
-      const response = await fetch(aliexpressUrl, {
+      const response = await fetch(sanitizedUrl, {
         headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.37 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.37',
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
           'Accept-Language': 'en-US,en;q=0.9',
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache',
+          'Upgrade-Insecure-Requests': '1'
         }
       });
       

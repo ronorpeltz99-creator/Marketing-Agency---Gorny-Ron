@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Rocket, DollarSign, Plus, Play, Pause, Eye, BarChart3,
@@ -33,7 +33,12 @@ interface AutoRule {
 
 import { launchCampaignAction } from '@/app/actions/meta';
 
-export default function CampaignLaunch() {
+interface CampaignLaunchProps {
+  creatives: { static: any[]; video: any[] };
+  productData: any;
+}
+
+export default function CampaignLaunch({ creatives, productData }: CampaignLaunchProps) {
   const [activeSubTab, setActiveSubTab] = useState<'campaigns' | 'rules' | 'budget'>('campaigns');
   const [selectedCampaign, setSelectedCampaign] = useState<Campaign | null>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -44,7 +49,7 @@ export default function CampaignLaunch() {
   const [topUpAmount, setTopUpAmount] = useState('');
   const [campaignBudget, setCampaignBudget] = useState('50');
 
-  useState(() => {
+  useEffect(() => {
     const fetchAccounts = async () => {
       const { fetchAdAccountsAction } = await import('@/app/actions/meta');
       const result = await fetchAdAccountsAction();
@@ -53,26 +58,39 @@ export default function CampaignLaunch() {
       }
     };
     fetchAccounts();
-  });
+  }, []);
 
   const handleLaunch = async () => {
     if (!selectedAdAccount) {
-      alert('Please select an ad account');
+      alert('Please select a Meta Ad Account first');
       return;
     }
+
+    if (creatives.static.length === 0 && creatives.video.length === 0) {
+      alert('Please approve at least one creative in the Ads Creator section first');
+      return;
+    }
+
     setIsLaunching(true);
     try {
+      // Collect all approved creative URLs
+      const creativeUrls = [
+        ...creatives.static.map(c => c.url),
+        ...creatives.video.map(v => v.url)
+      ];
+
       const result = await launchCampaignAction({
-        name: `Turbo Campaign - ${new Date().toLocaleDateString()}`,
+        name: `${productData?.title || 'New Product'} Campaign`,
         budget: parseFloat(campaignBudget),
-        storeId: 'your-store-id', // Should be dynamic
-        productId: 'your-product-id' // Should be dynamic
+        storeId: productData?.storeDomain || 'unknown-store',
+        productId: productData?.shopifyProductId || 'unknown-product',
+        creatives: creativeUrls
       });
-      
+
       if (result.success) {
-        alert('Campaign launched on Meta!');
+        alert('Campaign launched successfully on Meta!');
       } else {
-        alert(`Error: ${result.error}`);
+        alert(`Launch failed: ${result.error}`);
       }
     } catch (err) {
       alert('Failed to launch campaign');

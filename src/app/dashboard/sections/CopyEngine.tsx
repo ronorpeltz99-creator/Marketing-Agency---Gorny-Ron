@@ -19,8 +19,10 @@ const COPY_QUESTIONS = [
   { id: 'urgency', label: 'Any scarcity or urgency elements?', placeholder: 'e.g. Limited stock, launch discount, seasonal product...' },
 ];
 
-export default function CopyEngine({ audienceData }: CopyEngineProps) {
+export default function CopyEngine({ audienceData, productData }: CopyEngineProps) {
   const [mode, setMode] = useState<'questions' | 'generating' | 'done'>('questions');
+  const [isPushing, setIsPushing] = useState(false);
+  const [pushed, setPushed] = useState(false);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [generatedCopy, setGeneratedCopy] = useState({
@@ -47,6 +49,59 @@ export default function CopyEngine({ audienceData }: CopyEngineProps) {
     } catch (err) {
       alert('Generation failed. Please check your API keys.');
       setMode('questions');
+    }
+  };
+
+  const pushCopyToShopify = async () => {
+    if (!productData?.shopifyProductId || !productData?.storeDomain) {
+      alert('Please push the product to Shopify in the Store Builder first!');
+      return;
+    }
+
+    setIsPushing(true);
+    try {
+      const { updateShopifyProductAction } = await import('@/app/actions/shopify');
+      
+      // Format description as HTML
+      const descriptionHtml = `
+        <div class="product-description">
+          <h1 style="font-size: 24px; margin-bottom: 16px;">${generatedCopy.headline}</h1>
+          <p style="font-size: 18px; color: #666; margin-bottom: 24px;">${generatedCopy.subheadline}</p>
+          
+          <div style="margin-bottom: 32px; line-height: 1.6;">
+            ${generatedCopy.aboveFold.split('\n').map(p => `<p>${p}</p>`).join('')}
+          </div>
+
+          <div style="background: #f9f9f9; padding: 24px; border-radius: 12px; margin-bottom: 32px;">
+            <h2 style="font-size: 18px; margin-bottom: 12px;">Why customers love it</h2>
+            ${generatedCopy.belowFold.split('\n').map(p => `<p>${p}</p>`).join('')}
+          </div>
+
+          <div style="border-top: 1px solid #eee; padding-top: 24px;">
+            <p><strong>Guarantee:</strong> ${generatedCopy.socialProof}</p>
+          </div>
+        </div>
+      `;
+
+      const result = await updateShopifyProductAction(
+        productData.storeDomain,
+        productData.shopifyProductId,
+        {
+          title: generatedCopy.headline,
+          descriptionHtml
+        }
+      );
+
+      if (result.success) {
+        setPushed(true);
+        alert('Copy successfully pushed to Shopify store!');
+      } else {
+        throw new Error(result.error);
+      }
+    } catch (err: any) {
+      alert(`Push failed: ${err.message}`);
+    } finally {
+      setIsPushing(false);
     }
   };
 
@@ -146,7 +201,10 @@ export default function CopyEngine({ audienceData }: CopyEngineProps) {
               <div className="flex items-center justify-between">
                 <h2 className="text-[10px] font-black uppercase text-amber-400 tracking-[0.3em]">Above The Fold</h2>
                 <div className="flex gap-2">
-                  <button className="px-4 py-2 rounded-lg bg-white/5 text-[10px] font-bold text-zinc-500 hover:bg-white/10 flex items-center gap-1">
+                  <button 
+                    onClick={() => navigator.clipboard.writeText(`${generatedCopy.headline}\n\n${generatedCopy.subheadline}\n\n${generatedCopy.aboveFold}`)}
+                    className="px-4 py-2 rounded-lg bg-white/5 text-[10px] font-bold text-zinc-500 hover:bg-white/10 flex items-center gap-1"
+                  >
                     <Copy className="w-3 h-3" /> Copy
                   </button>
                   <button className="px-4 py-2 rounded-lg bg-white/5 text-[10px] font-bold text-zinc-500 hover:bg-white/10 flex items-center gap-1">
@@ -167,7 +225,10 @@ export default function CopyEngine({ audienceData }: CopyEngineProps) {
             <div className="p-10 rounded-[40px] bg-zinc-950 border border-white/5 space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-[10px] font-black uppercase text-amber-400 tracking-[0.3em]">Below The Fold</h2>
-                <button className="px-4 py-2 rounded-lg bg-white/5 text-[10px] font-bold text-zinc-500 hover:bg-white/10 flex items-center gap-1">
+                <button 
+                  onClick={() => navigator.clipboard.writeText(generatedCopy.belowFold)}
+                  className="px-4 py-2 rounded-lg bg-white/5 text-[10px] font-bold text-zinc-500 hover:bg-white/10 flex items-center gap-1"
+                >
                   <Copy className="w-3 h-3" /> Copy
                 </button>
               </div>
@@ -189,8 +250,22 @@ export default function CopyEngine({ audienceData }: CopyEngineProps) {
             </div>
 
             {/* Push to Shopify */}
-            <button className="w-full py-5 rounded-2xl bg-white text-black font-black text-sm uppercase tracking-[0.2em] hover:bg-zinc-200 transition-all flex items-center justify-center gap-3">
-              <Sparkles className="w-5 h-5" /> Push Copy to Shopify Store
+            <button 
+              onClick={pushCopyToShopify}
+              disabled={isPushing || pushed}
+              className={`w-full py-5 rounded-2xl font-black text-sm uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3 ${
+                pushed 
+                  ? 'bg-emerald-500 text-white cursor-default' 
+                  : 'bg-white text-black hover:bg-zinc-200 disabled:opacity-50'
+              }`}
+            >
+              {isPushing ? (
+                <><Loader2 className="w-5 h-5 animate-spin" /> Pushing to Shopify...</>
+              ) : pushed ? (
+                <><CheckCircle2 className="w-5 h-5" /> Copy Live on Shopify</>
+              ) : (
+                <><Sparkles className="w-5 h-5" /> Push Copy to Shopify Store</>
+              )}
             </button>
           </motion.div>
         )}

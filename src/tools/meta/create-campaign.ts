@@ -7,7 +7,7 @@ import { MetaAdsService } from "../../services/meta";
 export async function createCampaign(name: string, budget: number) {
   const meta = new MetaAdsService();
   try {
-    const result = await meta.launchCampaign({ name, budget, objective: 'OUTCOME_SALES' });
+    const result = await meta.launchFullCampaign({ name, budget, creatives: [] });
     return {
       success: true,
       message: `Meta campaign ${name} created with budget ${budget}.`,

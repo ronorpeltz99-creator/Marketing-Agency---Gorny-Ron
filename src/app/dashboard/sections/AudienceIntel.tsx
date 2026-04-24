@@ -57,8 +57,20 @@ export default function AudienceIntel({ onAudienceIdentified, audienceData }: Au
   const analyzeData = async () => {
     setMode('analyzing');
     try {
+      let finalAnswers = { ...answers };
+
+      if (uploadedFile) {
+        // Read file content if in upload mode
+        const text = await uploadedFile.text();
+        finalAnswers = { 
+          ...finalAnswers, 
+          file_content: text,
+          is_file_upload: 'true'
+        };
+      }
+
       const { identifyAudienceAction } = await import('@/app/actions/intelligence');
-      const result = await identifyAudienceAction(answers);
+      const result = await identifyAudienceAction(finalAnswers);
       
       if (result.success && result.data) {
         onAudienceIdentified(result.data);
@@ -66,8 +78,8 @@ export default function AudienceIntel({ onAudienceIdentified, audienceData }: Au
       } else {
         throw new Error(result.error || 'Failed to analyze audience');
       }
-    } catch (err) {
-      alert('Analysis failed. Please check your API keys.');
+    } catch (err: any) {
+      alert(`Analysis failed: ${err.message}`);
       setMode('choose');
     }
   };

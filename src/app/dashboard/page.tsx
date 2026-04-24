@@ -45,6 +45,7 @@ export default function DashboardPage() {
   // Shared state across sections
   const [productData, setProductData] = useState<any>(null);
   const [audienceData, setAudienceData] = useState<any>(null);
+  const [creatives, setCreatives] = useState<{ static: any[]; video: any[] }>({ static: [], video: [] });
 
   // Settings state
   const [isSaving, setIsSaving] = useState(false);
@@ -157,7 +158,11 @@ export default function DashboardPage() {
           )}
 
           {activeSection === 'store' && (
-            <StoreBuilder key="store" productData={productData} />
+            <StoreBuilder 
+              key="store" 
+              productData={productData} 
+              onProductSaved={(data) => setProductData({ ...productData, ...data })}
+            />
           )}
 
           {activeSection === 'audience' && (
@@ -169,15 +174,27 @@ export default function DashboardPage() {
           )}
 
           {activeSection === 'copy' && (
-            <CopyEngine key="copy" audienceData={audienceData} />
+            <CopyEngine 
+              key="copy" 
+              audienceData={audienceData} 
+              productData={productData}
+            />
           )}
 
           {activeSection === 'ads' && (
-            <AdsCreator key="ads" />
+            <AdsCreator 
+              key="ads" 
+              onCreativesUpdated={(data) => setCreatives(data)}
+              creatives={creatives}
+            />
           )}
 
           {activeSection === 'campaign' && (
-            <CampaignLaunch key="campaign" />
+            <CampaignLaunch 
+              key="campaign" 
+              creatives={creatives}
+              productData={productData}
+            />
           )}
 
           {activeSection === 'settings' && (

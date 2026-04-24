@@ -37,7 +37,7 @@ export class CreativeService {
 
     try {
       const response = await anthropic.messages.create({
-        model: process.env.ANTHROPIC_MODEL || 'claude-3-5-sonnet-20240620',
+                model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6',
         max_tokens: 1000,
         messages: [{ role: 'user', content: prompt }]
       });
@@ -77,21 +77,10 @@ export class CreativeService {
   async generateImages(prompt: string) {
     console.log(`[CreativeAgent] Generating high-end product visuals using Higgsfield...`);
     const higgsfieldKey = await getApiKey('higgsfield');
-    const apiUrl = 'https://api.higgsfield.ai'; // Update with actual URL
+    const apiUrl = process.env.HIGGSFIELD_API_URL || 'https://api.higgsfield.ai';
     
     if (!higgsfieldKey) {
-      // Fallback to fal.ai if configured, otherwise mock
-      const falKey = await getApiKey('fal');
-      if (falKey) {
-        console.log('[CreativeAgent] Using fal.ai fallback');
-        const response = await fetch('https://fal.run/fal-ai/flux/schnell', {
-          method: 'POST',
-          headers: { 'Authorization': `Key ${falKey}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ prompt, image_size: 'square' })
-        });
-        const result = await response.json();
-        return [result.images?.[0]?.url || 'https://images.unsplash.com/photo-1523275335684-37898b6baf30'];
-      }
+      console.warn('[CreativeAgent] Higgsfield key missing. Returning placeholder.');
       return ['https://images.unsplash.com/photo-1523275335684-37898b6baf30'];
     }
 
@@ -132,7 +121,7 @@ export class CreativeService {
     `;
 
     const response = await anthropic.messages.create({
-      model: 'claude-3-5-sonnet-20240620',
+              model: process.env.ANTHROPIC_MODEL || 'claude-sonnet-4-6',
       max_tokens: 300,
       messages: [{ role: 'user', content: analysisPrompt }]
     });
@@ -145,24 +134,31 @@ export class CreativeService {
    * Generates a video clip for a specific part of an ad (Hook, Standard, etc.)
    */
   async generateVideoClip(imageUrl: string, type: 'hook' | 'broll' | 'standard' | 'cta') {
-    console.log(`[CreativeAgent] Generating ${type} video clip from image...`);
-    const falKey = await getApiKey('fal');
-    
-    if (falKey) {
-      // Use fal.ai image-to-video (e.g. Stable Video Diffusion or Kling)
-      const response = await fetch('https://fal.run/fal-ai/luma-dream-machine', {
+    console.log(`[CreativeAgent] Generating ${type} video clip from image via Higgsfield...`);
+    const higgsfieldKey = await getApiKey('higgsfield');
+    const apiUrl = process.env.HIGGSFIELD_API_URL || 'https://api.higgsfield.ai';
+
+    if (!higgsfieldKey) {
+      console.warn('[CreativeAgent] Higgsfield key missing. Returning placeholder video.');
+      return 'https://higgsfield.ai/mock-video-pending';
+    }
+
+    try {
+      const response = await fetch(`${apiUrl}/v1/generate/video`, {
         method: 'POST',
-        headers: { 'Authorization': `Key ${falKey}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        headers: { 'X-API-Key': higgsfieldKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           prompt: `A dynamic ${type} shot of the product, cinematic camera movement, high quality.`,
-          image_url: imageUrl
+          image_url: imageUrl,
+          duration: type === 'hook' ? 3 : type === 'cta' ? 5 : 7
         })
       });
       const result = await response.json();
-      return result.video?.url || 'https://higgsfield.ai/mock-video-pending';
+      return result.video?.url || result.url || 'https://higgsfield.ai/mock-video-pending';
+    } catch (error) {
+      console.error('[CreativeAgent] Higgsfield video error:', error);
+      return 'https://higgsfield.ai/mock-video-pending';
     }
-
-    return 'https://higgsfield.ai/mock-video-pending';
   }
 
   async generateVideo(script: string, images: string[]) {

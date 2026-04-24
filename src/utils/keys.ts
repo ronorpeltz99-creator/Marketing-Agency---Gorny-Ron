@@ -28,8 +28,7 @@ export async function getApiKey(serviceName: string): Promise<string | null> {
     'shopify_name': 'SHOPIFY_STORE_NAME',
     'higgsfield': 'HIGGSFIELD_API_KEY',
     'meta_token': 'META_ACCESS_TOKEN',
-    'fal': 'FAL_KEY',
-    'fal_ai_key': 'FAL_KEY'
+    'meta_ad_account': 'META_AD_ACCOUNT_ID'
   };
 
   const envVarName = envMap[serviceName] || serviceName.toUpperCase();

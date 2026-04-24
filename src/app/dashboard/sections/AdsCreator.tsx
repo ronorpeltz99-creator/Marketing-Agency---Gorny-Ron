@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { generateCreativeImageAction } from '@/app/actions/creative';
 import {
@@ -22,7 +22,12 @@ interface Creative {
   order?: number;
 }
 
-export default function AdsCreator() {
+interface AdsCreatorProps {
+  creatives: { static: Creative[]; video: Creative[] };
+  onCreativesUpdated: (data: { static: Creative[]; video: Creative[] }) => void;
+}
+
+export default function AdsCreator({ creatives, onCreativesUpdated }: AdsCreatorProps) {
   const [activeMode, setActiveMode] = useState<'create' | 'library'>('create');
   const [createType, setCreateType] = useState<CreativeType | null>(null);
   const [videoType, setVideoType] = useState<VideoType | null>(null);
@@ -40,10 +45,15 @@ export default function AdsCreator() {
   const [generatedVideo, setGeneratedVideo] = useState<string | null>(null);
 
   // Library
-  const [videoCreatives, setVideoCreatives] = useState<Creative[]>([]);
-  const [staticCreatives, setStaticCreatives] = useState<Creative[]>([]);
+  const [videoCreatives, setVideoCreatives] = useState<Creative[]>(creatives.video);
+  const [staticCreatives, setStaticCreatives] = useState<Creative[]>(creatives.static);
   const [pendingVideos, setPendingVideos] = useState<Creative[]>([]);
   const [selectedForMix, setSelectedForMix] = useState<string[]>([]);
+
+  // Sync with parent
+  useEffect(() => {
+    onCreativesUpdated({ static: staticCreatives, video: videoCreatives });
+  }, [staticCreatives, videoCreatives]);
 
   const handleImageUpload = (setter: (url: string) => void) => {
     const url = prompt('Enter image URL:');
@@ -90,8 +100,8 @@ export default function AdsCreator() {
     const newCreative: Creative = {
       id: `static_${Date.now()}`,
       type: 'image',
-      url: 'approved-image',
-      thumbnail: '',
+      url: generatedImage || '',
+      thumbnail: generatedImage || '',
       approved: true
     };
     setStaticCreatives([...staticCreatives, newCreative]);
@@ -107,7 +117,7 @@ export default function AdsCreator() {
       id: `video_${Date.now()}`,
       type: 'video',
       subType: videoType,
-      url: 'approved-video',
+      url: generatedVideo || '',
       thumbnail: '',
       approved: true
     };

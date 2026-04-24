@@ -128,6 +128,53 @@ export class ShopifyService {
   }
 
   /**
+   * Updates an existing product in Shopify.
+   */
+  async updateProduct(storeDomain: string, productId: string, updates: { title?: string; descriptionHtml?: string; price?: string }) {
+    const headers = await this.getHeaders(storeDomain);
+    const query = `
+      mutation productUpdate($input: ProductInput!) {
+        productUpdate(input: $input) {
+          product {
+            id
+            title
+          }
+          userErrors {
+            field
+            message
+          }
+        }
+      }
+    `;
+
+    const variables = {
+      input: {
+        id: productId,
+        ...(updates.title && { title: updates.title }),
+        ...(updates.descriptionHtml && { descriptionHtml: updates.descriptionHtml }),
+        ...(updates.price && { variants: [{ price: updates.price }] })
+      }
+    };
+
+    try {
+      const response = await fetch(`https://${storeDomain}/admin/api/2024-01/graphql.json`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ query, variables }),
+      });
+
+      const result = await response.json();
+      if (result.data?.productUpdate?.userErrors?.length > 0) {
+        throw new Error(result.data.productUpdate.userErrors[0].message);
+      }
+      return result.data?.productUpdate?.product;
+    } catch (error: any) {
+      console.error('[ShopifyService] Error updating product:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Configures the theme and designs the home page.
    */
   async designStore(storeDomain: string, assets: any) {

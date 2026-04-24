@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
   Store, DollarSign, ImageIcon, Save, Loader2, CheckCircle2,
@@ -43,15 +43,26 @@ interface Order {
 
 interface StoreBuilderProps {
   productData: ProductData | null;
+  onProductSaved?: (data: any) => void;
 }
 
-export default function StoreBuilder({ productData }: StoreBuilderProps) {
+export default function StoreBuilder({ productData, onProductSaved }: StoreBuilderProps) {
   const [activeSubTab, setActiveSubTab] = useState<'products' | 'orders'>('products');
   const [storeInfo, setStoreInfo] = useState<{ domain: string; name: string } | null>(
     (productData as any)?.storeInfo ? { domain: (productData as any).storeInfo.domain, name: (productData as any).storeInfo.name } : null
   );
   const [isCreatingStore, setIsCreatingStore] = useState(false);
   const [newStoreName, setNewStoreName] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [storeProduct, setStoreProduct] = useState<StoreProduct>({
+    title: productData?.title || '',
+    price: productData ? (parseFloat(productData.price) * 2.5).toFixed(2) : '0',
+    comparePrice: productData ? (parseFloat(productData.price) * 3.5).toFixed(2) : '0',
+    costPerUnit: productData?.price || '0',
+    isPhysical: true,
+    images: productData?.images || [],
+  });
 
   const handleCreateStore = async () => {
     if (!newStoreName) return;
@@ -101,6 +112,12 @@ export default function StoreBuilder({ productData }: StoreBuilderProps) {
       
       if (result.success) {
         alert('Product pushed to Shopify!');
+        if (onProductSaved) {
+          onProductSaved({
+            shopifyProductId: result.product.shopify_product_id,
+            storeDomain: storeInfo.domain
+          });
+        }
       } else {
         alert(`Error: ${result.error}`);
       }
@@ -130,30 +147,79 @@ export default function StoreBuilder({ productData }: StoreBuilderProps) {
       </header>
 
       {!storeInfo && (
-        <div className="p-10 rounded-[40px] bg-zinc-950 border border-white/5 space-y-6">
-          <h2 className="text-[10px] font-black uppercase text-zinc-500 tracking-[0.3em] flex items-center gap-2">
-            <Store className="w-4 h-4 text-indigo-400" /> Initial Store Setup
-          </h2>
-          <div className="space-y-2">
-            <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Brand / Organization Name</label>
-            <div className="flex gap-4">
-              <input
-                type="text"
-                value={newStoreName}
-                onChange={(e) => setNewStoreName(e.target.value)}
-                placeholder="e.g. TurboJet"
-                className="flex-1 bg-white/5 border border-white/10 rounded-2xl py-4 px-5 text-sm font-bold focus:border-indigo-500 focus:outline-none transition-all"
-              />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="p-10 rounded-[40px] bg-zinc-950 border border-white/5 space-y-6">
+            <h2 className="text-[10px] font-black uppercase text-zinc-500 tracking-[0.3em] flex items-center gap-2">
+              <Plus className="w-4 h-4 text-emerald-400" /> Option A: Create New Store
+            </h2>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Brand Name</label>
+                <input
+                  type="text"
+                  value={newStoreName}
+                  onChange={(e) => setNewStoreName(e.target.value)}
+                  placeholder="e.g. TurboJet"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-5 text-sm font-bold focus:border-indigo-500 focus:outline-none transition-all"
+                />
+              </div>
               <button
                 onClick={handleCreateStore}
                 disabled={isCreatingStore || !newStoreName}
-                className="px-8 py-4 rounded-2xl bg-white text-black font-black text-xs uppercase tracking-widest hover:bg-zinc-200 transition-all disabled:opacity-50 flex items-center gap-2"
+                className="w-full py-4 rounded-2xl bg-white text-black font-black text-xs uppercase tracking-widest hover:bg-zinc-200 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
               >
                 {isCreatingStore ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-                Create Dev Store
+                Create via Partner API
               </button>
             </div>
-            <p className="text-[10px] text-zinc-600">This will create a new Shopify development store via Partner API.</p>
+          </div>
+
+          <div className="p-10 rounded-[40px] bg-zinc-950 border border-white/5 space-y-6">
+            <h2 className="text-[10px] font-black uppercase text-zinc-500 tracking-[0.3em] flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-indigo-400" /> Option B: Link Existing Store
+            </h2>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Store Domain</label>
+                <input
+                  id="manual-domain"
+                  type="text"
+                  placeholder="e.g. turbojet-dev.myshopify.com"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-5 text-sm font-bold focus:border-indigo-500 focus:outline-none transition-all"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Admin Access Token</label>
+                <input
+                  id="manual-token"
+                  type="password"
+                  placeholder="shpat_xxxxxxxxxxxxxxxx"
+                  className="w-full bg-white/5 border border-white/10 rounded-2xl py-4 px-5 text-sm font-bold focus:border-indigo-500 focus:outline-none transition-all"
+                />
+                <p className="text-[9px] text-zinc-600">Get this from: Settings &gt; App and sales channels &gt; Develop apps &gt; Create an app</p>
+              </div>
+              <button
+                onClick={async () => {
+                  const domainInput = document.getElementById('manual-domain') as HTMLInputElement;
+                  const tokenInput = document.getElementById('manual-token') as HTMLInputElement;
+                  const domain = domainInput?.value.trim();
+                  const token = tokenInput?.value.trim();
+                  
+                  if (domain && token) {
+                    // Save the token to Supabase for this store
+                    const { saveApiKeysAction } = await import('@/app/actions/keys');
+                    await saveApiKeysAction('shopify_token', token);
+                    setStoreInfo({ domain, name: domain.split('.')[0] });
+                  } else {
+                    alert('Please enter both domain and token');
+                  }
+                }}
+                className="w-full py-4 rounded-2xl bg-indigo-600 text-white font-black text-xs uppercase tracking-widest hover:bg-indigo-500 transition-all flex items-center justify-center gap-2"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                Connect & Authorize
+              </button>
+            </div>
           </div>
         </div>
       )}
